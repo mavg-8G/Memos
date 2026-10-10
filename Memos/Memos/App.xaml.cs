@@ -1,50 +1,94 @@
-﻿using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-using Microsoft.UI.Xaml.Shapes;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.ApplicationModel;
-using Windows.ApplicationModel.Activation;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
+using Memos.Core.Markdown;
+using Memos.Core.Services;
+using Memos.Core.ViewModels;
+using Memos.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Xaml;
 
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
+namespace Memos;
 
-namespace Memos
+public partial class App : Application
 {
-    /// <summary>
-    /// Provides application-specific behavior to supplement the default Application class.
-    /// </summary>
-    public partial class App : Application
-    {
-        private Window? _window;
+    private readonly IReadOnlyList<string> _startupPaths;
+    private MainWindow? _window;
 
-        /// <summary>
-        /// Initializes the singleton application object.  This is the first line of authored code
-        /// executed, and as such is the logical equivalent of main() or WinMain().
-        /// </summary>
-        public App()
+    public App(IReadOnlyList<string> startupPaths)
+    {
+        _startupPaths = startupPaths;
+        Services = ConfigureServices();
+
+        // The language override has to be in place before any resource is looked up.
+        var language = Services.GetRequiredService<ISettingsService>().Current.Language;
+        if (!string.IsNullOrEmpty(language))
         {
-            InitializeComponent();
+            try
+            {
+                Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = language;
+            }
+            catch (Exception ex) when (ex is ArgumentException or System.Runtime.InteropServices.COMException)
+            {
+                // An unknown tag in the settings file: keep following Windows.
+            }
         }
 
-        /// <summary>
-        /// Invoked when the application is launched.
-        /// </summary>
-        /// <param name="args">Details about the launch request and process.</param>
-        protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
+        InitializeComponent();
+        UnhandledException += OnUnhandledException;
+    }
+
+    public static new App Current => (App)Application.Current;
+
+    public IServiceProvider Services { get; }
+
+    protected override async void OnLaunched(LaunchActivatedEventArgs args)
+    {
+        _window = Services.GetRequiredService<MainWindow>();
+        Program.FilesReceived += paths => _window.DispatcherQueue.TryEnqueue(() => _window.OpenFromAnotherInstance(paths));
+        _window.Activate();
+        await _window.ViewModel.InitializeAsync(_startupPaths);
+    }
+
+    private static ServiceProvider ConfigureServices()
+    {
+        // MEMOS_DATA_DIR redirects settings and session data, for portable use and for testing.
+        var dataDirectory = Environment.GetEnvironmentVariable("MEMOS_DATA_DIR") is { Length: > 0 } custom
+            ? Path.GetFullPath(custom)
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Memos");
+
+        var services = new ServiceCollection();
+        services.AddSingleton<IAppPaths>(new AppPaths(dataDirectory));
+        services.AddSingleton<ISettingsService, JsonSettingsService>();
+        services.AddSingleton<IFileService, FileService>();
+        services.AddSingleton<IRecentFilesService, RecentFilesService>();
+        services.AddSingleton<ISessionService, SessionService>();
+        services.AddSingleton<ISearchService, SearchService>();
+        services.AddSingleton<IMarkdownService, MarkdownService>();
+        services.AddSingleton<ILocalizer, Localizer>();
+
+        // Services that need the window resolve it lazily through WindowContext.
+        services.AddSingleton<WindowContext>();
+        services.AddSingleton<IDialogService, DialogService>();
+        services.AddSingleton<IFilePickerService, FilePickerService>();
+        services.AddSingleton<IClipboardService, ClipboardService>();
+        services.AddSingleton<WebViewEnvironment>();
+        services.AddSingleton<IPdfExporter, WebViewPdfExporter>();
+        services.AddSingleton<ThemeService>();
+
+        services.AddSingleton<MainViewModel>();
+        services.AddSingleton<MainWindow>();
+        return services.BuildServiceProvider();
+    }
+
+    private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
+    {
+        // Keep a local trace for diagnosis; nothing ever leaves the machine.
+        try
         {
-            _window = new MainWindow();
-            _window.Activate();
+            var directory = Services.GetRequiredService<IAppPaths>().DataDirectory;
+            Directory.CreateDirectory(directory);
+            File.AppendAllText(Path.Combine(directory, "crash.log"), $"{DateTime.Now:O}\n{e.Exception}\n\n");
+        }
+        catch (Exception ex) when (FileService.IsFileSystemError(ex))
+        {
         }
     }
 }

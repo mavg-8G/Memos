@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="LanguageTag" xml:space="preserve"><value>en</value></data>
+  <data name="Untitled" xml:space="preserve"><value>Untitled</value></data>
+  <data name="Md_TableHeader" xml:space="preserve"><value>Column</value></data>
+  <data name="Md_Placeholder" xml:space="preserve"><value>text</value></data>
+  <data name="Btn_Ok" xml:space="preserve"><value>OK</value></data>
+  <data name="Btn_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Btn_Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Btn_DontSave" xml:space="preserve"><value>Don&apos;t save</value></data>
+  <data name="Btn_Open" xml:space="preserve"><value>Open</value></data>
+  <data name="Btn_Reload" xml:space="preserve"><value>Reload</value></data>
+  <data name="Btn_Convert" xml:space="preserve"><value>Change encoding</value></data>
+  <data name="Btn_SaveAnyway" xml:space="preserve"><value>Save anyway</value></data>
+  <data name="Btn_Overwrite" xml:space="preserve"><value>Overwrite</value></data>
+  <data name="Msg_Error_Title" xml:space="preserve"><value>The operation could not be completed</value></data>
+  <data name="Msg_SaveChanges_Title" xml:space="preserve"><value>Save changes?</value></data>
+  <data name="Msg_SaveChanges" xml:space="preserve"><value>&quot;{0}&quot; has unsaved changes. They will be lost if you don&apos;t save them.</value></data>
+  <data name="Msg_FileNotFound" xml:space="preserve"><value>The file could not be found:
+{0}</value></data>
+  <data name="Msg_FileTooLarge" xml:space="preserve"><value>&quot;{0}&quot; is larger than the supported maximum ({1} MB). The editor is not designed for files of that size.</value></data>
+  <data name="Msg_LargeFile_Title" xml:space="preserve"><value>Large file</value></data>
+  <data name="Msg_LargeFile" xml:space="preserve"><value>&quot;{0}&quot; is {1} MB. Opening it can take from a few seconds to several minutes (longer the more accented or other non-ASCII text it contains) and the window will not respond meanwhile. Open it?</value></data>
+  <data name="Msg_Binary" xml:space="preserve"><value>&quot;{0}&quot; does not look like a text file (it contains binary data) and was not opened to avoid damaging it.</value></data>
+  <data name="Msg_AccessDenied" xml:space="preserve"><value>You don&apos;t have permission to access:
+{0}</value></data>
+  <data name="Msg_ReadError" xml:space="preserve"><value>&quot;{0}&quot; could not be read.
+{1}</value></data>
+  <data name="Msg_SaveError" xml:space="preserve"><value>&quot;{0}&quot; could not be saved. The original file was not changed.
+{1}</value></data>
+  <data name="Msg_ReadOnly" xml:space="preserve"><value>&quot;{0}&quot; is read-only. Use &quot;Save as&quot; to save a copy under another name.</value></data>
+  <data name="Msg_AlreadyOpen" xml:space="preserve"><value>&quot;{0}&quot; is already open in another tab. Choose a different name.</value></data>
+  <data name="Msg_ExportError" xml:space="preserve"><value>The document could not be exported.
+{0}</value></data>
+  <data name="Msg_LossyEncoding_Title" xml:space="preserve"><value>Characters would be lost</value></data>
+  <data name="Msg_LossyEncoding" xml:space="preserve"><value>The document contains characters that {0} cannot represent. If you save it with that encoding they will be replaced by &quot;?&quot; and cannot be recovered.</value></data>
+  <data name="Msg_LossySave" xml:space="preserve"><value>The document contains characters that {0} cannot represent; they would be replaced by &quot;?&quot;. Cancel and switch the encoding to UTF-8 from the status bar to keep them.</value></data>
+  <data name="Msg_ExternalChange_Title" xml:space="preserve"><value>The file changed on disk</value></data>
+  <data name="Msg_ExternalChangeOverwrite" xml:space="preserve"><value>Another program has modified &quot;{0}&quot; since you opened it. Overwriting it will discard those changes.</value></data>
+  <data name="Msg_ReloadDiscard_Title" xml:space="preserve"><value>Discard changes?</value></data>
+  <data name="Msg_ReloadDiscard" xml:space="preserve"><value>Reloading &quot;{0}&quot; will discard the changes you have not saved.</value></data>
+  <data name="Notice_ExternalChange" xml:space="preserve"><value>Another program has modified this file.</value></data>
+  <data name="Notice_InvalidBytes" xml:space="preserve"><value>The file contains bytes that are not valid {0}; they are shown as &quot;�&quot;. Saving will not preserve them; try reopening with another encoding from the status bar.</value></data>
+  <data name="Notice_MixedLineEndings" xml:space="preserve"><value>The file mixes different line endings. Saving will make them all {0}.</value></data>
+  <data name="Notice_EncodingGuessed" xml:space="preserve"><value>The file does not declare an encoding and is not valid UTF-8; it was opened as {0}. You can reopen it with another encoding from the status bar.</value></data>
+  <data name="GoTo_Title" xml:space="preserve"><value>Go to line</value></data>
+  <data name="GoTo_Header" xml:space="preserve"><value>Line number (1–{0})</value></data>
+  <data name="GoTo_Go" xml:space="preserve"><value>Go</value></data>
+  <data name="Link_Title" xml:space="preserve"><value>Insert link</value></data>
+  <data name="Link_Text" xml:space="preserve"><value>Text</value></data>
+  <data name="Link_Url" xml:space="preserve"><value>Address</value></data>
+  <data name="Link_Insert" xml:space="preserve"><value>Insert</value></data>
+  <data name="Filter_Supported" xml:space="preserve"><value>Text and Markdown files</value></data>
+  <data name="Filter_Text" xml:space="preserve"><value>Text files</value></data>
+  <data name="Filter_Markdown" xml:space="preserve"><value>Markdown</value></data>
+  <data name="Filter_All" xml:space="preserve"><value>All files</value></data>
+  <data name="Filter_Images" xml:space="preserve"><value>Images</value></data>
+  <data name="Status_Position" xml:space="preserve"><value>Ln {0}, Col {1}</value></data>
+  <data name="Status_Characters" xml:space="preserve"><value>{0} characters</value></data>
+  <data name="Status_Words" xml:space="preserve"><value>{0} words</value></data>
+  <data name="Status_ReadingTime" xml:space="preserve"><value>{0} min read</value></data>
+  <data name="Status_Zoom" xml:space="preserve"><value>Zoom</value></data>
+  <data name="Status_LineEnding" xml:space="preserve"><value>Line endings</value></data>
+  <data name="Status_Encoding" xml:space="preserve"><value>Encoding</value></data>
+  <data name="LineEnding_CrLf" xml:space="preserve"><value>Windows (CRLF)</value></data>
+  <data name="LineEnding_Lf" xml:space="preserve"><value>Unix (LF)</value></data>
+  <data name="LineEnding_Cr" xml:space="preserve"><value>Classic Mac (CR)</value></data>
+  <data name="Encoding_SaveWith" xml:space="preserve"><value>Save with encoding</value></data>
+  <data name="Encoding_ReopenWith" xml:space="preserve"><value>Reopen with encoding</value></data>
+  <data name="Editor_Name" xml:space="preserve"><value>Text editor</value></data>
+  <data name="Preview_Name" xml:space="preserve"><value>Preview</value></data>
+  <data name="Preview_Unavailable" xml:space="preserve"><value>The preview cannot be shown. Check that Microsoft Edge WebView2 Runtime is installed.</value></data>
+  <data name="Find_Placeholder" xml:space="preserve"><value>Find</value></data>
+  <data name="Find_ReplacePlaceholder" xml:space="preserve"><value>Replace with</value></data>
+  <data name="Find_ToggleReplace" xml:space="preserve"><value>Show or hide replace</value></data>
+  <data name="Find_MatchCase" xml:space="preserve"><value>Match case</value></data>
+  <data name="Find_WholeWord" xml:space="preserve"><value>Whole words only</value></data>
+  <data name="Find_Regex" xml:space="preserve"><value>Use regular expressions</value></data>
+  <data name="Find_Previous" xml:space="preserve"><value>Previous (Shift+Enter)</value></data>
+  <data name="Find_Next" xml:space="preserve"><value>Next (Enter)</value></data>
+  <data name="Find_Close" xml:space="preserve"><value>Close (Esc)</value></data>
+  <data name="Find_Replace" xml:space="preserve"><value>Replace</value></data>
+  <data name="Find_ReplaceAll" xml:space="preserve"><value>Replace all</value></data>
+  <data name="Find_NoResults" xml:space="preserve"><value>No results</value></data>
+  <data name="Find_Count" xml:space="preserve"><value>{0} of {1}</value></data>
+  <data name="Find_Total" xml:space="preserve"><value>{0} matches</value></data>
+  <data name="Find_Timeout" xml:space="preserve"><value>The search took too long</value></data>
+  <data name="Find_InvalidRegex" xml:space="preserve"><value>Invalid regular expression</value></data>
+  <data name="Find_Replaced" xml:space="preserve"><value>{0} replaced</value></data>
+  <data name="Outline_Title" xml:space="preserve"><value>Table of contents</value></data>
+  <data name="Outline_Empty" xml:space="preserve"><value>The document&apos;s headings will appear here.</value></data>
+  <data name="Tab_Close" xml:space="preserve"><value>Close</value></data>
+  <data name="Tab_CloseOthers" xml:space="preserve"><value>Close others</value></data>
+  <data name="Tab_CloseRight" xml:space="preserve"><value>Close tabs to the right</value></data>
+  <data name="Tab_CopyPath" xml:space="preserve"><value>Copy path</value></data>
+  <data name="Tab_Reveal" xml:space="preserve"><value>Show in File Explorer</value></data>
+  <data name="Menu_File" xml:space="preserve"><value>File</value></data>
+  <data name="Menu_Edit" xml:space="preserve"><value>Edit</value></data>
+  <data name="Menu_View" xml:space="preserve"><value>View</value></data>
+  <data name="Menu_Format" xml:space="preserve"><value>Format</value></data>
+  <data name="Menu_Lines" xml:space="preserve"><value>Lines</value></data>
+  <data name="Menu_Case" xml:space="preserve"><value>Change case</value></data>
+  <data name="Menu_Indentation" xml:space="preserve"><value>Indentation</value></data>
+  <data name="Cmd_NewText" xml:space="preserve"><value>New text document</value></data>
+  <data name="Cmd_NewMarkdown" xml:space="preserve"><value>New Markdown document</value></data>
+  <data name="Cmd_Open" xml:space="preserve"><value>Open…</value></data>
+  <data name="Cmd_Recent" xml:space="preserve"><value>Recent</value></data>
+  <data name="Cmd_Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Cmd_SaveAs" xml:space="preserve"><value>Save as…</value></data>
+  <data name="Cmd_SaveAll" xml:space="preserve"><value>Save all</value></data>
+  <data name="Cmd_Export" xml:space="preserve"><value>Export</value></data>
+  <data name="Cmd_ExportHtml" xml:space="preserve"><value>Export to HTML…</value></data>
+  <data name="Cmd_ExportPdf" xml:space="preserve"><value>Export to PDF…</value></data>
+  <data name="Cmd_CopyHtml" xml:space="preserve"><value>Copy as HTML</value></data>
+  <data name="Cmd_CloseTab" xml:space="preserve"><value>Close tab</value></data>
+  <data name="Cmd_ReopenTab" xml:space="preserve"><value>Reopen closed tab</value></data>
+  <data name="Cmd_Settings" xml:space="preserve"><value>Settings</value></data>
+  <data name="Cmd_Exit" xml:space="preserve"><value>Exit</value></data>
+  <data name="Cmd_Undo" xml:space="preserve"><value>Undo</value></data>
+  <data name="Cmd_Redo" xml:space="preserve"><value>Redo</value></data>
+  <data name="Cmd_Cut" xml:space="preserve"><value>Cut</value></data>
+  <data name="Cmd_Copy" xml:space="preserve"><value>Copy</value></data>
+  <data name="Cmd_Paste" xml:space="preserve"><value>Paste</value></data>
+  <data name="Cmd_SelectAll" xml:space="preserve"><value>Select all</value></data>
+  <data name="Cmd_Find" xml:space="preserve"><value>Find</value></data>
+  <data name="Cmd_Replace" xml:space="preserve"><value>Replace</value></data>
+  <data name="Cmd_GoToLine" xml:space="preserve"><value>Go to line…</value></data>
+  <data name="Cmd_DuplicateLine" xml:space="preserve"><value>Duplicate line</value></data>
+  <data name="Cmd_DeleteLine" xml:space="preserve"><value>Delete line</value></data>
+  <data name="Cmd_MoveLineUp" xml:space="preserve"><value>Move line up</value></data>
+  <data name="Cmd_MoveLineDown" xml:space="preserve"><value>Move line down</value></data>
+  <data name="Cmd_Uppercase" xml:space="preserve"><value>Convert to UPPERCASE</value></data>
+  <data name="Cmd_Lowercase" xml:space="preserve"><value>Convert to lowercase</value></data>
+  <data name="Cmd_Indent" xml:space="preserve"><value>Increase indent</value></data>
+  <data name="Cmd_Outdent" xml:space="preserve"><value>Decrease indent</value></data>
+  <data name="Cmd_IndentToSpaces" xml:space="preserve"><value>Convert indentation to spaces</value></data>
+  <data name="Cmd_IndentToTabs" xml:space="preserve"><value>Convert indentation to tabs</value></data>
+  <data name="Cmd_TrimTrailing" xml:space="preserve"><value>Trim trailing whitespace</value></data>
+  <data name="Cmd_ZoomIn" xml:space="preserve"><value>Zoom in</value></data>
+  <data name="Cmd_ZoomOut" xml:space="preserve"><value>Zoom out</value></data>
+  <data name="Cmd_ZoomReset" xml:space="preserve"><value>Reset zoom</value></data>
+  <data name="Cmd_WordWrap" xml:space="preserve"><value>Word wrap</value></data>
+  <data name="Cmd_LineNumbers" xml:space="preserve"><value>Line numbers</value></data>
+  <data name="Cmd_StatusBar" xml:space="preserve"><value>Status bar</value></data>
+  <data name="Cmd_ViewEditor" xml:space="preserve"><value>Editor only</value></data>
+  <data name="Cmd_ViewSplit" xml:space="preserve"><value>Split view</value></data>
+  <data name="Cmd_ViewPreview" xml:space="preserve"><value>Preview only</value></data>
+  <data name="Cmd_Outline" xml:space="preserve"><value>Table of contents</value></data>
+  <data name="Cmd_Heading" xml:space="preserve"><value>Heading</value></data>
+  <data name="Cmd_HeadingLevel" xml:space="preserve"><value>Heading {0}</value></data>
+  <data name="Cmd_HeadingNone" xml:space="preserve"><value>Normal text</value></data>
+  <data name="Cmd_Bold" xml:space="preserve"><value>Bold</value></data>
+  <data name="Cmd_Italic" xml:space="preserve"><value>Italic</value></data>
+  <data name="Cmd_Strikethrough" xml:space="preserve"><value>Strikethrough</value></data>
+  <data name="Cmd_InlineCode" xml:space="preserve"><value>Inline code</value></data>
+  <data name="Cmd_Link" xml:space="preserve"><value>Link…</value></data>
+  <data name="Cmd_Image" xml:space="preserve"><value>Image…</value></data>
+  <data name="Cmd_BulletList" xml:space="preserve"><value>Bulleted list</value></data>
+  <data name="Cmd_NumberedList" xml:space="preserve"><value>Numbered list</value></data>
+  <data name="Cmd_TaskList" xml:space="preserve"><value>Task list</value></data>
+  <data name="Cmd_Quote" xml:space="preserve"><value>Quote</value></data>
+  <data name="Cmd_CodeBlock" xml:space="preserve"><value>Code block</value></data>
+  <data name="Cmd_Table" xml:space="preserve"><value>Table</value></data>
+  <data name="Cmd_HorizontalRule" xml:space="preserve"><value>Horizontal rule</value></data>
+  <data name="Tip_Open" xml:space="preserve"><value>Open (Ctrl+O)</value></data>
+  <data name="Tip_Save" xml:space="preserve"><value>Save (Ctrl+S)</value></data>
+  <data name="Tip_Undo" xml:space="preserve"><value>Undo (Ctrl+Z)</value></data>
+  <data name="Tip_Redo" xml:space="preserve"><value>Redo (Ctrl+Y)</value></data>
+  <data name="Tip_Find" xml:space="preserve"><value>Find (Ctrl+F)</value></data>
+  <data name="Tip_Bold" xml:space="preserve"><value>Bold (Ctrl+B)</value></data>
+  <data name="Tip_Italic" xml:space="preserve"><value>Italic (Ctrl+I)</value></data>
+  <data name="Tip_Link" xml:space="preserve"><value>Link (Ctrl+K)</value></data>
+  <data name="Table_Rows" xml:space="preserve"><value>Rows</value></data>
+  <data name="Table_Columns" xml:space="preserve"><value>Columns</value></data>
+  <data name="Table_Insert" xml:space="preserve"><value>Insert table</value></data>
+  <data name="Workspace_Name" xml:space="preserve"><value>Editor type</value></data>
+  <data name="Workspace_Text" xml:space="preserve"><value>Text</value></data>
+  <data name="Workspace_Markdown" xml:space="preserve"><value>Markdown</value></data>
+  <data name="Recent_Empty" xml:space="preserve"><value>No recent files</value></data>
+  <data name="Recent_Clear" xml:space="preserve"><value>Clear list</value></data>
+  <data name="Drop_Open" xml:space="preserve"><value>Open in a tab</value></data>
+  <data name="Settings_Title" xml:space="preserve"><value>Settings</value></data>
+  <data name="Settings_Back" xml:space="preserve"><value>Back to the editor (Esc)</value></data>
+  <data name="Settings_Appearance" xml:space="preserve"><value>Appearance</value></data>
+  <data name="Settings_Editor" xml:space="preserve"><value>Editor</value></data>
+  <data name="Settings_General" xml:space="preserve"><value>General</value></data>
+  <data name="Settings_About" xml:space="preserve"><value>About</value></data>
+  <data name="Set_Theme" xml:space="preserve"><value>Theme</value></data>
+  <data name="Theme_System" xml:space="preserve"><value>Use Windows setting</value></data>
+  <data name="Theme_Light" xml:space="preserve"><value>Light</value></data>
+  <data name="Theme_Dark" xml:space="preserve"><value>Dark</value></data>
+  <data name="Set_Backdrop" xml:space="preserve"><value>Background material</value></data>
+  <data name="Set_Backdrop_Desc" xml:space="preserve"><value>The window&apos;s translucent effect.</value></data>
+  <data name="Backdrop_Mica" xml:space="preserve"><value>Mica</value></data>
+  <data name="Backdrop_MicaAlt" xml:space="preserve"><value>Mica Alt</value></data>
+  <data name="Backdrop_Acrylic" xml:space="preserve"><value>Acrylic</value></data>
+  <data name="Backdrop_None" xml:space="preserve"><value>None (solid colour)</value></data>
+  <data name="Set_VisualOnly" xml:space="preserve"><value>Font, size and zoom are display preferences of the editor. Text files do not store formatting: changing these never alters their content.</value></data>
+  <data name="Set_FontFamily" xml:space="preserve"><value>Editor font</value></data>
+  <data name="Set_FontFamily_Desc" xml:space="preserve"><value>Monospaced fonts suit data and code; proportional ones suit prose.</value></data>
+  <data name="Set_MonospacedOnly" xml:space="preserve"><value>Monospaced only</value></data>
+  <data name="Set_FontSize" xml:space="preserve"><value>Font size</value></data>
+  <data name="Set_DefaultZoom" xml:space="preserve"><value>Default zoom</value></data>
+  <data name="Set_DefaultZoom_Desc" xml:space="preserve"><value>Percentage documents open at.</value></data>
+  <data name="Set_WordWrap_Desc" xml:space="preserve"><value>Long lines continue on the next one instead of running off the window.</value></data>
+  <data name="Set_DefaultEncoding" xml:space="preserve"><value>Default encoding</value></data>
+  <data name="Set_DefaultEncoding_Desc" xml:space="preserve"><value>For new documents. Existing files keep their own.</value></data>
+  <data name="Set_DefaultLineEnding" xml:space="preserve"><value>Default line ending</value></data>
+  <data name="Set_DefaultLineEnding_Desc" xml:space="preserve"><value>For new documents. Existing files keep their own.</value></data>
+  <data name="Set_InsertSpaces" xml:space="preserve"><value>Insert spaces with the Tab key</value></data>
+  <data name="Set_InsertSpaces_Desc" xml:space="preserve"><value>When off, a tab character is inserted.</value></data>
+  <data name="Set_TabSize" xml:space="preserve"><value>Tab size</value></data>
+  <data name="Set_AutoIndent" xml:space="preserve"><value>Automatic indentation</value></data>
+  <data name="Set_AutoIndent_Desc" xml:space="preserve"><value>When you press Enter, the new line starts with the indentation of the previous one.</value></data>
+  <data name="Set_AutoSave" xml:space="preserve"><value>Auto save</value></data>
+  <data name="Set_AutoSave_Desc" xml:space="preserve"><value>Saves files that already have a name a few seconds after each change.</value></data>
+  <data name="Set_ViewMode" xml:space="preserve"><value>Initial view</value></data>
+  <data name="Set_ViewMode_Desc" xml:space="preserve"><value>How Markdown documents open.</value></data>
+  <data name="ViewMode_Editor" xml:space="preserve"><value>Editor only</value></data>
+  <data name="ViewMode_Split" xml:space="preserve"><value>Split view</value></data>
+  <data name="ViewMode_Preview" xml:space="preserve"><value>Preview only</value></data>
+  <data name="Set_SyncScroll" xml:space="preserve"><value>Synchronise scrolling</value></data>
+  <data name="Set_SyncScroll_Desc" xml:space="preserve"><value>The preview follows the editor in split view.</value></data>
+  <data name="Set_PreviewStyle" xml:space="preserve"><value>Preview style</value></data>
+  <data name="PreviewStyle_Default" xml:space="preserve"><value>Default</value></data>
+  <data name="PreviewStyle_Serif" xml:space="preserve"><value>Reading (serif)</value></data>
+  <data name="PreviewStyle_Compact" xml:space="preserve"><value>Compact</value></data>
+  <data name="Set_PreviewFontSize" xml:space="preserve"><value>Preview text size</value></data>
+  <data name="Set_CodeHighlighting" xml:space="preserve"><value>Highlight code blocks</value></data>
+  <data name="Set_CodeHighlighting_Desc" xml:space="preserve"><value>Colours code in known languages in the preview and in exports.</value></data>
+  <data name="Set_SyntaxHighlighting" xml:space="preserve"><value>Highlight Markdown syntax in the editor</value></data>
+  <data name="Set_SyntaxHighlighting_Desc" xml:space="preserve"><value>Turned off automatically for very long documents.</value></data>
+  <data name="Set_RemoteImages" xml:space="preserve"><value>Load images from the Internet</value></data>
+  <data name="Set_RemoteImages_Desc" xml:space="preserve"><value>When off, the preview only shows local images and makes no connections.</value></data>
+  <data name="Set_Language" xml:space="preserve"><value>Interface language</value></data>
+  <data name="Set_Language_Desc" xml:space="preserve"><value>Language of menus and messages.</value></data>
+  <data name="Language_System" xml:space="preserve"><value>Use Windows setting</value></data>
+  <data name="Set_Language_Restart" xml:space="preserve"><value>The language will change the next time you open Memos.</value></data>
+  <data name="Set_StartupDocument" xml:space="preserve"><value>Document at start-up</value></data>
+  <data name="Set_StartupDocument_Desc" xml:space="preserve"><value>Kind of blank document created when there is nothing to open.</value></data>
+  <data name="Startup_Text" xml:space="preserve"><value>Text</value></data>
+  <data name="Startup_Markdown" xml:space="preserve"><value>Markdown</value></data>
+  <data name="Set_RestoreSession" xml:space="preserve"><value>Restore the previous session</value></data>
+  <data name="Set_RestoreSession_Desc" xml:space="preserve"><value>On start-up, brings back your tabs including unsaved changes. With this option the window closes without asking.</value></data>
+  <data name="Set_ShowRecent" xml:space="preserve"><value>Show recent files in the File menu</value></data>
+  <data name="Set_ConfirmClose" xml:space="preserve"><value>Confirm before closing modified documents</value></data>
+  <data name="Set_ConfirmClose_Desc" xml:space="preserve"><value>When off, closing a tab discards its changes without asking (it can be reopened with Ctrl+Shift+T).</value></data>
+  <data name="Set_Associations" xml:space="preserve"><value>File associations</value></data>
+  <data name="Set_Associations_Desc" xml:space="preserve"><value>Memos never changes which program opens your files. You can choose it yourself in Windows Settings.</value></data>
+  <data name="Set_Associations_Button" xml:space="preserve"><value>Open default apps</value></data>
+  <data name="About_Privacy" xml:space="preserve"><value>Works offline. No telemetry, no accounts, no ads and no artificial intelligence.</value></data>
+  <data name="About_Version" xml:space="preserve"><value>Version {0}</value></data>
+</root>

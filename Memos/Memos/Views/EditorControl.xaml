@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Memos.Views.EditorControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:h="using:Memos.Helpers">
+
+    <UserControl.Resources>
+        <Style x:Key="GutterLabelStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorTertiaryBrush}" />
+            <Setter Property="TextAlignment" Value="Right" />
+            <Setter Property="IsTextScaleFactorEnabled" Value="False" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Line numbers. Drawn by the control because RichEditBox has no gutter of its own. -->
+        <Canvas x:Name="Gutter"
+                Width="48"
+                IsHitTestVisible="False"
+                AutomationProperties.AccessibilityView="Raw" />
+
+        <RichEditBox x:Name="Box"
+                     Grid.Column="1"
+                     AutomationProperties.Name="{h:Loc Key=Editor_Name}"
+                     AcceptsReturn="True"
+                     AllowDrop="False"
+                     BorderThickness="0"
+                     ClipboardCopyFormat="PlainText"
+                     DisabledFormattingAccelerators="All"
+                     IsSpellCheckEnabled="False"
+                     IsTextPredictionEnabled="False"
+                     IsColorFontEnabled="True"
+                     Padding="10,8,12,8"
+                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     SelectionFlyout="{x:Null}"
+                     SelectionHighlightColorWhenNotFocused="{ThemeResource AccentFillColorTertiaryBrush}">
+            <RichEditBox.Resources>
+                <!-- A flat editing surface: no box, no focus underline; the window material shows through. -->
+                <SolidColorBrush x:Key="TextControlBackground" Color="Transparent" />
+                <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="Transparent" />
+                <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="Transparent" />
+                <SolidColorBrush x:Key="TextControlBorderBrush" Color="Transparent" />
+                <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="Transparent" />
+                <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="Transparent" />
+                <Thickness x:Key="TextControlBorderThemeThickness">0</Thickness>
+                <Thickness x:Key="TextControlBorderThemeThicknessFocused">0</Thickness>
+            </RichEditBox.Resources>
+            <RichEditBox.ContextFlyout>
+                <MenuFlyout>
+                    <MenuFlyoutItem Text="{h:Loc Key=Cmd_Undo}" Click="OnUndoClick" KeyboardAcceleratorTextOverride="Ctrl+Z">
+                        <MenuFlyoutItem.Icon><SymbolIcon Symbol="Undo" /></MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutItem Text="{h:Loc Key=Cmd_Redo}" Click="OnRedoClick" KeyboardAcceleratorTextOverride="Ctrl+Y">
+                        <MenuFlyoutItem.Icon><SymbolIcon Symbol="Redo" /></MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutSeparator />
+                    <MenuFlyoutItem Text="{h:Loc Key=Cmd_Cut}" Click="OnCutClick" KeyboardAcceleratorTextOverride="Ctrl+X">
+                        <MenuFlyoutItem.Icon><SymbolIcon Symbol="Cut" /></MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutItem Text="{h:Loc Key=Cmd_Copy}" Click="OnCopyClick" KeyboardAcceleratorTextOverride="Ctrl+C">
+                        <MenuFlyoutItem.Icon><SymbolIcon Symbol="Copy" /></MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutItem Text="{h:Loc Key=Cmd_Paste}" Click="OnPasteClick" KeyboardAcceleratorTextOverride="Ctrl+V">
+                        <MenuFlyoutItem.Icon><SymbolIcon Symbol="Paste" /></MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutSeparator />
+                    <MenuFlyoutItem Text="{h:Loc Key=Cmd_SelectAll}" Click="OnSelectAllClick" KeyboardAcceleratorTextOverride="Ctrl+A">
+                        <MenuFlyoutItem.Icon><SymbolIcon Symbol="SelectAll" /></MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                </MenuFlyout>
+            </RichEditBox.ContextFlyout>
+        </RichEditBox>
+    </Grid>
+</UserControl>

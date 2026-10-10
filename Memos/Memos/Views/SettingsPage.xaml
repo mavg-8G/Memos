@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Memos.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:h="using:Memos.Helpers"
+    xmlns:views="using:Memos.Views">
+
+    <Grid Background="{ThemeResource LayerFillColorDefaultBrush}"
+          BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+          BorderThickness="0,1,0,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Margin="20,16,20,8" Orientation="Horizontal" Spacing="12">
+            <Button x:Name="BackButton"
+                    Style="{StaticResource IconButtonStyle}"
+                    AutomationProperties.Name="{h:Loc Key=Settings_Back}"
+                    Command="{x:Bind ViewModel.CloseSettingsCommand}"
+                    ToolTipService.ToolTip="{h:Loc Key=Settings_Back}">
+                <FontIcon Glyph="&#xE72B;" FontSize="14" />
+            </Button>
+            <TextBlock VerticalAlignment="Center" Style="{StaticResource SubtitleTextBlockStyle}" Text="{h:Loc Key=Settings_Title}" />
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" Padding="20,0,20,0">
+            <StackPanel MaxWidth="900" Margin="0,0,0,32" HorizontalAlignment="Stretch">
+
+                <!-- Appearance -->
+                <TextBlock Style="{StaticResource SettingsSectionHeaderStyle}" Text="{h:Loc Key=Settings_Appearance}" Margin="1,8,0,6" />
+                <views:SettingCard Header="{h:Loc Key=Set_Theme}">
+                    <ComboBox x:Name="ThemeCombo" MinWidth="200" />
+                </views:SettingCard>
+                <views:SettingCard Header="{h:Loc Key=Set_Backdrop}" Description="{h:Loc Key=Set_Backdrop_Desc}">
+                    <ComboBox x:Name="BackdropCombo" MinWidth="200" />
+                </views:SettingCard>
+                <InfoBar Margin="0,4,0,8"
+                         IsClosable="False"
+                         IsOpen="True"
+                         Message="{h:Loc Key=Set_VisualOnly}"
+                         Severity="Informational" />
+                <views:SettingCard Header="{h:Loc Key=Set_FontFamily}" Description="{h:Loc Key=Set_FontFamily_Desc}">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <CheckBox x:Name="MonospacedOnlyCheck" MinWidth="0" Content="{h:Loc Key=Set_MonospacedOnly}" />
+                        <ComboBox x:Name="FontCombo" Width="220" AutomationProperties.Name="{h:Loc Key=Set_FontFamily}" />
+                    </StackPanel>
+                </views:SettingCard>
+                <views:SettingCard Header="{h:Loc Key=Set_FontSize}">
+                    <NumberBox x:Name="FontSizeBox" MinWidth="140" SmallChange="1" SpinButtonPlacementMode="Inline" />
+                </views:SettingCard>
+                <views:SettingCard Header="{h:Loc Key=Set_DefaultZoom}" Description="{h:Loc Key=Set_DefaultZoom_Desc}">
+                    <NumberBox x:Name="DefaultZoomBox" MinWidth="140" SmallChange="10" SpinButtonPlacementMode="Inline" />
+                </views:SettingCard>
+                <views:SettingCard Header="{h:Loc Key=Cmd_WordWrap}" Description="{h:Loc Key=Set_WordWrap_Desc}">
+                    <ToggleSwitch IsOn="{x:Bind Settings.WordWrap, Mode=TwoWay}" />
+                </views:SettingCard>
+                <views:SettingCard Header="{h:Loc Key=Cmd_StatusBar}">
+                    <ToggleSwitch IsOn="{x:Bind Settings.ShowStatusBar, Mode=TwoWay}" />
+                </views:SettingCard>
+
+                <!-- Editor -->
+                <TextBlock Style="{StaticResource SettingsSectionHeaderStyle}" Text="{h:Loc Key=Settings_Editor}" />
+                <views:SettingCard Header="{h:Loc Key=Set_DefaultEncoding}" Description="{h:Loc Key=Set_DefaultEncoding_Desc}">
+                    <ComboBox x:Name="EncodingCombo" MinWidth="200" />
+                </views:SettingCard>
+                <views:SettingCard Header="{h:Loc Key=Set_DefaultLineEnding}" Description="{h:Loc Key=Set_DefaultLineEnding_Desc}">
+                    <ComboBox x:Name="LineEndingCombo" MinWidth="200" />
+                </views:SettingCard>
+                <views:SettingCard Header="{h:Loc Key=Set_InsertSpaces}" Description="{h:Loc Key=Set_InsertSpaces_Desc}">
+                    <ToggleSwitch IsOn="{x:Bind Settings.InsertSpaces, Mode=TwoWay}" />
+                </views:SettingCard>
+                <views:SettingCard Header="{h:Loc Key=Set_TabSize}">
+                    <NumberBox x:Name="TabSizeBox" MinWidth="140" SmallChange="1" SpinButtonPlacementMode="Inline" />
+                </views:SettingCard>
+                <views:SettingCard Header="{h:Loc Key=Cmd_LineNumbers}">
+                    <ToggleSwitch IsOn="{x:Bind Settings.ShowLineNumbers, Mode=TwoWay}" />
+                </views:SettingCard>
+                <views:SettingCard Header="{h:Loc Key=Set_AutoIndent}" Description="{h:Loc Key=Set_AutoIndent_Desc}">
+                    <ToggleSwitch IsOn="{x:Bind Settings.AutoIndent, Mode=TwoWay}" />
+                </views:SettingCard>
+                <views:SettingCard Header="{h:Loc Key=Set_AutoSave}" Description="{h:Loc Key=Set_AutoSave_Desc}">
+                    <ToggleSwitch IsOn="{x:Bind Settings.AutoSave, Mode=TwoWay}" />
+                </views:SettingCard>
+
+                <!-- Markdown -->
+                <TextBlock Style="{StaticResource SettingsSectionHeaderStyle}" Text="Markdown" />
+                <views:SettingCard Header="{h:Loc Key=Set_ViewMode}" Description="{h:Loc Key=Set_ViewMode_Desc}">
+                    <ComboBox x:Name="ViewModeCombo" MinWidth="200" />
+                </views:SettingCard>
+                <views:SettingCard Header="{h:Loc Key=Set_SyncScroll}" Description="{h:Loc Key=Set_SyncScroll_Desc}">
+                    <ToggleSwitch IsOn="{x:Bind Settings.SyncScroll, Mode=TwoWay}" />
+                </views:SettingCard>
+                <views:SettingCard Header="{h:Loc Key=Set_PreviewStyle}">
+                    <ComboBox x:Name="PreviewStyleCombo" MinWidth="200" />
+                </views:SettingCard>
+                <views:SettingCard Header="{h:Loc Key=Set_PreviewFontSize}">
+                    <NumberBox x:Name="PreviewFontSizeBox" MinWidth="140" SmallChange="1" SpinButtonPlacementMode="Inline" />
+                </views:SettingCard>
+                <views:SettingCard Header="{h:Loc Key=Set_CodeHighlighting}" Description="{h:Loc Key=Set_CodeHighlighting_Desc}">
+                    <ToggleSwitch IsOn="{x:Bind Settings.CodeHighlighting, Mode=TwoWay}" />
+                </views:SettingCard>
+                <views:SettingCard Header="{h:Loc Key=Set_SyntaxHighlighting}" Description="{h:Loc Key=Set_SyntaxHighlighting_Desc}">
+                    <ToggleSwitch IsOn="{x:Bind Settings.MarkdownSyntaxHighlighting, Mode=TwoWay}" />
+                </views:SettingCard>
+                <views:SettingCard Header="{h:Loc Key=Set_RemoteImages}" Description="{h:Loc Key=Set_RemoteImages_Desc}">
+                    <ToggleSwitch IsOn="{x:Bind Settings.AllowRemoteImages, Mode=TwoWay}" />
+                </views:SettingCard>
+
+                <!-- General -->
+                <TextBlock Style="{StaticResource SettingsSectionHeaderStyle}" Text="{h:Loc Key=Settings_General}" />
+                <views:SettingCard Header="{h:Loc Key=Set_Language}" Description="{h:Loc Key=Set_Language_Desc}">
+                    <ComboBox x:Name="LanguageCombo" MinWidth="200" />
+                </views:SettingCard>
+                <InfoBar x:Name="RestartBar"
+                         Margin="0,0,0,4"
+                         IsClosable="False"
+                         IsOpen="False"
+                         Message="{h:Loc Key=Set_Language_Restart}"
+                         Severity="Informational" />
+                <views:SettingCard Header="{h:Loc Key=Set_StartupDocument}" Description="{h:Loc Key=Set_StartupDocument_Desc}">
+                    <ComboBox x:Name="StartupCombo" MinWidth="200" />
+                </views:SettingCard>
+                <views:SettingCard Header="{h:Loc Key=Set_RestoreSession}" Description="{h:Loc Key=Set_RestoreSession_Desc}">
+                    <ToggleSwitch IsOn="{x:Bind Settings.RestoreSession, Mode=TwoWay}" />
+                </views:SettingCard>
+                <views:SettingCard Header="{h:Loc Key=Set_ShowRecent}">
+                    <ToggleSwitch IsOn="{x:Bind Settings.ShowRecentFiles, Mode=TwoWay}" />
+                </views:SettingCard>
+                <views:SettingCard Header="{h:Loc Key=Set_ConfirmClose}" Description="{h:Loc Key=Set_ConfirmClose_Desc}">
+                    <ToggleSwitch IsOn="{x:Bind Settings.ConfirmCloseModified, Mode=TwoWay}" />
+                </views:SettingCard>
+                <views:SettingCard Header="{h:Loc Key=Set_Associations}" Description="{h:Loc Key=Set_Associations_Desc}">
+                    <Button Content="{h:Loc Key=Set_Associations_Button}" Click="OnDefaultAppsClick" />
+                </views:SettingCard>
+
+                <!-- About -->
+                <TextBlock Style="{StaticResource SettingsSectionHeaderStyle}" Text="{h:Loc Key=Settings_About}" />
+                <views:SettingCard x:Name="AboutCard" Header="Memos" Description="{h:Loc Key=About_Privacy}">
+                    <TextBlock x:Name="VersionText" Foreground="{ThemeResource TextFillColorSecondaryBrush}" IsTextSelectionEnabled="True" />
+                </views:SettingCard>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

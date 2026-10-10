@@ -1,13 +1,13 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 
 <Package
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-  xmlns:systemai="http://schemas.microsoft.com/appx/manifest/systemai/windows10"
-  IgnorableNamespaces="uap rescap systemai">
+  IgnorableNamespaces="uap rescap">
 
+  <!-- Identity, publisher and version of the package. Publisher must match the signing certificate. -->
   <Identity
     Name="63eb2a90-0da8-4512-a844-73e098d515fb"
     Publisher="CN=mvasc"
@@ -16,18 +16,18 @@
   <mp:PhoneIdentity PhoneProductId="63eb2a90-0da8-4512-a844-73e098d515fb" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
-    <DisplayName>Memos (Package)</DisplayName>
+    <DisplayName>Memos</DisplayName>
     <PublisherDisplayName>mvasc</PublisherDisplayName>
     <Logo>Images\StoreLogo.png</Logo>
   </Properties>
 
   <Dependencies>
-    <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.17763.0" MaxVersionTested="10.0.26226.0" />
-    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.26226.0" />
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.22000.0" MaxVersionTested="10.0.26100.0" />
   </Dependencies>
 
   <Resources>
-    <Resource Language="x-generate"/>
+    <Resource Language="en-US"/>
+    <Resource Language="es-ES"/>
   </Resources>
 
   <Applications>
@@ -35,19 +35,53 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="Memos (Package)"
-        Description="Memos (Package)"
+        DisplayName="Memos"
+        Description="Editor de texto y Markdown para Windows 11 / Text and Markdown editor for Windows 11"
         BackgroundColor="transparent"
         Square150x150Logo="Images\Square150x150Logo.png"
         Square44x44Logo="Images\Square44x44Logo.png">
         <uap:DefaultTile Wide310x150Logo="Images\Wide310x150Logo.png" />
         <uap:SplashScreen Image="Images\SplashScreen.png" />
       </uap:VisualElements>
+
+      <!--
+        These declarations only make Memos appear under "Open with" for the listed extensions.
+        Windows keeps whatever default app the user has chosen; nothing is taken over.
+      -->
+      <Extensions>
+        <uap:Extension Category="windows.fileTypeAssociation">
+          <uap:FileTypeAssociation Name="memos-text">
+            <uap:DisplayName>Memos</uap:DisplayName>
+            <uap:SupportedFileTypes>
+              <uap:FileType>.txt</uap:FileType>
+              <uap:FileType>.log</uap:FileType>
+              <uap:FileType>.csv</uap:FileType>
+              <uap:FileType>.tsv</uap:FileType>
+              <uap:FileType>.json</uap:FileType>
+              <uap:FileType>.xml</uap:FileType>
+              <uap:FileType>.yaml</uap:FileType>
+              <uap:FileType>.yml</uap:FileType>
+              <uap:FileType>.ini</uap:FileType>
+              <uap:FileType>.cfg</uap:FileType>
+              <uap:FileType>.conf</uap:FileType>
+            </uap:SupportedFileTypes>
+          </uap:FileTypeAssociation>
+        </uap:Extension>
+        <uap:Extension Category="windows.fileTypeAssociation">
+          <uap:FileTypeAssociation Name="memos-markdown">
+            <uap:DisplayName>Memos Markdown</uap:DisplayName>
+            <uap:SupportedFileTypes>
+              <uap:FileType>.md</uap:FileType>
+              <uap:FileType>.markdown</uap:FileType>
+            </uap:SupportedFileTypes>
+          </uap:FileTypeAssociation>
+        </uap:Extension>
+      </Extensions>
     </Application>
   </Applications>
 
+  <!-- A desktop app needs full trust. No AI, network-service or device capabilities are requested. -->
   <Capabilities>
     <rescap:Capability Name="runFullTrust" />
-    <systemai:Capability Name="systemAIModels"/>
   </Capabilities>
 </Package>

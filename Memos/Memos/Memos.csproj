@@ -1,31 +1,66 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
-    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.22000.0</TargetPlatformMinVersion>
     <RootNamespace>Memos</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\Memos.ico</ApplicationIcon>
     <Platforms>x86;x64;ARM64</Platforms>
     <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
     <UseWinUI>true</UseWinUI>
     <WinUISDKReferences>false</WinUISDKReferences>
     <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <!-- Program.cs provides Main so a second launch can hand its files to the running window. -->
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+
+    <!-- Identity shown by Windows; change these (and Assets\Memos.ico) to rebrand the app. -->
+    <AssemblyName>Memos</AssemblyName>
+    <Product>Memos</Product>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <!--
+    The MSIX is produced by the "Memos (Package)" project. For a quick run without installing a
+    package, build with -p:MemosUnpackaged=true: the Windows App SDK is then copied next to the exe.
+  -->
+  <PropertyGroup Condition="'$(MemosUnpackaged)' == 'true'">
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
   </PropertyGroup>
 
   <ItemGroup>
     <Manifest Include="$(ApplicationManifest)" />
+    <Content Include="Assets\Memos.ico" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
+    <!--
+      Only the Windows App SDK components the app uses are referenced. The Microsoft.WindowsAppSDK
+      metapackage would also bring the AI and ML components, which this app must not ship.
+    -->
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2705" />
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Base" Version="2.0.4" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.DWrite" Version="2.1.0" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="2.3.12" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="2.1.9" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="2.5.1" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.3.9" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
   </ItemGroup>
 
-    <!-- Publish Properties -->
+  <ItemGroup>
+    <ProjectReference Include="..\Memos.Core\Memos.Core.csproj" />
+  </ItemGroup>
+
+  <!-- Publish Properties -->
   <PropertyGroup>
     <PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>
     <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
-    <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
-    <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
+    <!-- Trimming is off: Markdig and ColorCode are not annotated for it and it has not been validated. -->
+    <PublishTrimmed>False</PublishTrimmed>
   </PropertyGroup>
 </Project>

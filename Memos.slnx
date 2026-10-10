@@ -12,4 +12,10 @@
     <Platform Solution="*|x64" Project="x64" />
     <Platform Solution="*|x86" Project="x86" />
   </Project>
+  <Project Path="Memos/Memos.Core/Memos.Core.csproj">
+    <Platform Project="AnyCPU" />
+  </Project>
+  <Project Path="Memos/Memos.Tests/Memos.Tests.csproj">
+    <Platform Project="AnyCPU" />
+  </Project>
 </Solution>

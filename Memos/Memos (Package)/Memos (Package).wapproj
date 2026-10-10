@@ -39,7 +39,7 @@
     <ProjectGuid>902933d6-5efe-42e8-84b9-bb08cd2e0430</ProjectGuid>
     <TargetPlatformVersion>10.0.28000.0</TargetPlatformVersion>
     <TargetPlatformMinVersion>10.0.22000.0</TargetPlatformMinVersion>
-    <AssetTargetFallback>net8.0-windows$(TargetPlatformVersion);$(AssetTargetFallback)</AssetTargetFallback>
+    <AssetTargetFallback>net10.0-windows$(TargetPlatformVersion);$(AssetTargetFallback)</AssetTargetFallback>
     <DefaultLanguage>en-US</DefaultLanguage>
     <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
     <EntryPointProjectUniqueName>..\Memos\Memos.csproj</EntryPointProjectUniqueName>
@@ -66,7 +66,10 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2705" />
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Base" Version="2.0.4" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="2.3.12" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="2.5.1" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.3.9" />
   </ItemGroup>
   <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.targets" />
 </Project>

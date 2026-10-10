@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# The packaging project needs these profiles to publish the app, so they are versioned.
+!**/Properties/PublishProfiles/win-*.pubxml
+

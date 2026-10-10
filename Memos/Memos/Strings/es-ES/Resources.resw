@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="LanguageTag" xml:space="preserve"><value>es</value></data>
+  <data name="Untitled" xml:space="preserve"><value>Sin título</value></data>
+  <data name="Md_TableHeader" xml:space="preserve"><value>Columna</value></data>
+  <data name="Md_Placeholder" xml:space="preserve"><value>texto</value></data>
+  <data name="Btn_Ok" xml:space="preserve"><value>Aceptar</value></data>
+  <data name="Btn_Cancel" xml:space="preserve"><value>Cancelar</value></data>
+  <data name="Btn_Save" xml:space="preserve"><value>Guardar</value></data>
+  <data name="Btn_DontSave" xml:space="preserve"><value>No guardar</value></data>
+  <data name="Btn_Open" xml:space="preserve"><value>Abrir</value></data>
+  <data name="Btn_Reload" xml:space="preserve"><value>Recargar</value></data>
+  <data name="Btn_Convert" xml:space="preserve"><value>Cambiar codificación</value></data>
+  <data name="Btn_SaveAnyway" xml:space="preserve"><value>Guardar de todos modos</value></data>
+  <data name="Btn_Overwrite" xml:space="preserve"><value>Sobrescribir</value></data>
+  <data name="Msg_Error_Title" xml:space="preserve"><value>No se pudo completar la operación</value></data>
+  <data name="Msg_SaveChanges_Title" xml:space="preserve"><value>¿Guardar los cambios?</value></data>
+  <data name="Msg_SaveChanges" xml:space="preserve"><value>«{0}» tiene cambios sin guardar. Si no los guardas, se perderán.</value></data>
+  <data name="Msg_FileNotFound" xml:space="preserve"><value>No se encuentra el archivo:
+{0}</value></data>
+  <data name="Msg_FileTooLarge" xml:space="preserve"><value>«{0}» supera el tamaño máximo admitido ({1} MB). El editor no está diseñado para archivos de ese tamaño.</value></data>
+  <data name="Msg_LargeFile_Title" xml:space="preserve"><value>Archivo grande</value></data>
+  <data name="Msg_LargeFile" xml:space="preserve"><value>«{0}» ocupa {1} MB. Abrirlo puede tardar desde unos segundos hasta varios minutos (más cuanto más texto con acentos u otros caracteres no ASCII contenga) y la ventana no responderá mientras tanto. ¿Quieres abrirlo?</value></data>
+  <data name="Msg_Binary" xml:space="preserve"><value>«{0}» no parece un archivo de texto (contiene datos binarios) y no se ha abierto para no dañarlo.</value></data>
+  <data name="Msg_AccessDenied" xml:space="preserve"><value>No tienes permiso para acceder a:
+{0}</value></data>
+  <data name="Msg_ReadError" xml:space="preserve"><value>No se pudo leer «{0}».
+{1}</value></data>
+  <data name="Msg_SaveError" xml:space="preserve"><value>No se pudo guardar «{0}». El archivo original no se ha modificado.
+{1}</value></data>
+  <data name="Msg_ReadOnly" xml:space="preserve"><value>«{0}» es de solo lectura. Usa «Guardar como» para guardar una copia con otro nombre.</value></data>
+  <data name="Msg_AlreadyOpen" xml:space="preserve"><value>«{0}» ya está abierto en otra pestaña. Elige otro nombre.</value></data>
+  <data name="Msg_ExportError" xml:space="preserve"><value>No se pudo exportar el documento.
+{0}</value></data>
+  <data name="Msg_LossyEncoding_Title" xml:space="preserve"><value>Se perderían caracteres</value></data>
+  <data name="Msg_LossyEncoding" xml:space="preserve"><value>El documento contiene caracteres que {0} no puede representar. Si lo guardas con esa codificación se sustituirán por «?» y no podrán recuperarse.</value></data>
+  <data name="Msg_LossySave" xml:space="preserve"><value>El documento contiene caracteres que {0} no puede representar y se sustituirían por «?». Cancela y cambia la codificación a UTF-8 desde la barra de estado para conservarlos.</value></data>
+  <data name="Msg_ExternalChange_Title" xml:space="preserve"><value>El archivo cambió en el disco</value></data>
+  <data name="Msg_ExternalChangeOverwrite" xml:space="preserve"><value>Otro programa ha modificado «{0}» desde que lo abriste. Si lo sobrescribes, esos cambios se perderán.</value></data>
+  <data name="Msg_ReloadDiscard_Title" xml:space="preserve"><value>¿Descartar los cambios?</value></data>
+  <data name="Msg_ReloadDiscard" xml:space="preserve"><value>Al volver a cargar «{0}» se perderán los cambios que no hayas guardado.</value></data>
+  <data name="Notice_ExternalChange" xml:space="preserve"><value>Otro programa ha modificado este archivo.</value></data>
+  <data name="Notice_InvalidBytes" xml:space="preserve"><value>El archivo contiene bytes que no son {0} válido y se muestran como «�». Si lo guardas, esos bytes no se conservarán; prueba a reabrirlo con otra codificación desde la barra de estado.</value></data>
+  <data name="Notice_MixedLineEndings" xml:space="preserve"><value>El archivo mezcla distintos saltos de línea. Al guardar se unificarán como {0}.</value></data>
+  <data name="Notice_EncodingGuessed" xml:space="preserve"><value>El archivo no indica su codificación y no es UTF-8 válido; se ha abierto como {0}. Puedes reabrirlo con otra codificación desde la barra de estado.</value></data>
+  <data name="GoTo_Title" xml:space="preserve"><value>Ir a línea</value></data>
+  <data name="GoTo_Header" xml:space="preserve"><value>Número de línea (1–{0})</value></data>
+  <data name="GoTo_Go" xml:space="preserve"><value>Ir</value></data>
+  <data name="Link_Title" xml:space="preserve"><value>Insertar enlace</value></data>
+  <data name="Link_Text" xml:space="preserve"><value>Texto</value></data>
+  <data name="Link_Url" xml:space="preserve"><value>Dirección</value></data>
+  <data name="Link_Insert" xml:space="preserve"><value>Insertar</value></data>
+  <data name="Filter_Supported" xml:space="preserve"><value>Archivos de texto y Markdown</value></data>
+  <data name="Filter_Text" xml:space="preserve"><value>Archivos de texto</value></data>
+  <data name="Filter_Markdown" xml:space="preserve"><value>Markdown</value></data>
+  <data name="Filter_All" xml:space="preserve"><value>Todos los archivos</value></data>
+  <data name="Filter_Images" xml:space="preserve"><value>Imágenes</value></data>
+  <data name="Status_Position" xml:space="preserve"><value>Lín. {0}, col. {1}</value></data>
+  <data name="Status_Characters" xml:space="preserve"><value>{0} caracteres</value></data>
+  <data name="Status_Words" xml:space="preserve"><value>{0} palabras</value></data>
+  <data name="Status_ReadingTime" xml:space="preserve"><value>Lectura: {0} min</value></data>
+  <data name="Status_Zoom" xml:space="preserve"><value>Zoom</value></data>
+  <data name="Status_LineEnding" xml:space="preserve"><value>Saltos de línea</value></data>
+  <data name="Status_Encoding" xml:space="preserve"><value>Codificación</value></data>
+  <data name="LineEnding_CrLf" xml:space="preserve"><value>Windows (CRLF)</value></data>
+  <data name="LineEnding_Lf" xml:space="preserve"><value>Unix (LF)</value></data>
+  <data name="LineEnding_Cr" xml:space="preserve"><value>Mac clásico (CR)</value></data>
+  <data name="Encoding_SaveWith" xml:space="preserve"><value>Guardar con codificación</value></data>
+  <data name="Encoding_ReopenWith" xml:space="preserve"><value>Reabrir con codificación</value></data>
+  <data name="Editor_Name" xml:space="preserve"><value>Editor de texto</value></data>
+  <data name="Preview_Name" xml:space="preserve"><value>Vista previa</value></data>
+  <data name="Preview_Unavailable" xml:space="preserve"><value>No se puede mostrar la vista previa. Comprueba que Microsoft Edge WebView2 Runtime esté instalado.</value></data>
+  <data name="Find_Placeholder" xml:space="preserve"><value>Buscar</value></data>
+  <data name="Find_ReplacePlaceholder" xml:space="preserve"><value>Reemplazar por</value></data>
+  <data name="Find_ToggleReplace" xml:space="preserve"><value>Mostrar u ocultar reemplazar</value></data>
+  <data name="Find_MatchCase" xml:space="preserve"><value>Coincidir mayúsculas y minúsculas</value></data>
+  <data name="Find_WholeWord" xml:space="preserve"><value>Solo palabras completas</value></data>
+  <data name="Find_Regex" xml:space="preserve"><value>Usar expresiones regulares</value></data>
+  <data name="Find_Previous" xml:space="preserve"><value>Anterior (Mayús+Intro)</value></data>
+  <data name="Find_Next" xml:space="preserve"><value>Siguiente (Intro)</value></data>
+  <data name="Find_Close" xml:space="preserve"><value>Cerrar (Esc)</value></data>
+  <data name="Find_Replace" xml:space="preserve"><value>Reemplazar</value></data>
+  <data name="Find_ReplaceAll" xml:space="preserve"><value>Reemplazar todo</value></data>
+  <data name="Find_NoResults" xml:space="preserve"><value>Sin resultados</value></data>
+  <data name="Find_Count" xml:space="preserve"><value>{0} de {1}</value></data>
+  <data name="Find_Total" xml:space="preserve"><value>{0} coincidencias</value></data>
+  <data name="Find_Timeout" xml:space="preserve"><value>La búsqueda tardó demasiado</value></data>
+  <data name="Find_InvalidRegex" xml:space="preserve"><value>Expresión regular no válida</value></data>
+  <data name="Find_Replaced" xml:space="preserve"><value>{0} reemplazos</value></data>
+  <data name="Outline_Title" xml:space="preserve"><value>Tabla de contenidos</value></data>
+  <data name="Outline_Empty" xml:space="preserve"><value>Los encabezados del documento aparecerán aquí.</value></data>
+  <data name="Tab_Close" xml:space="preserve"><value>Cerrar</value></data>
+  <data name="Tab_CloseOthers" xml:space="preserve"><value>Cerrar las demás</value></data>
+  <data name="Tab_CloseRight" xml:space="preserve"><value>Cerrar las de la derecha</value></data>
+  <data name="Tab_CopyPath" xml:space="preserve"><value>Copiar ruta</value></data>
+  <data name="Tab_Reveal" xml:space="preserve"><value>Mostrar en el Explorador</value></data>
+  <data name="Menu_File" xml:space="preserve"><value>Archivo</value></data>
+  <data name="Menu_Edit" xml:space="preserve"><value>Editar</value></data>
+  <data name="Menu_View" xml:space="preserve"><value>Ver</value></data>
+  <data name="Menu_Format" xml:space="preserve"><value>Formato</value></data>
+  <data name="Menu_Lines" xml:space="preserve"><value>Líneas</value></data>
+  <data name="Menu_Case" xml:space="preserve"><value>Mayúsculas y minúsculas</value></data>
+  <data name="Menu_Indentation" xml:space="preserve"><value>Sangría</value></data>
+  <data name="Cmd_NewText" xml:space="preserve"><value>Nuevo documento de texto</value></data>
+  <data name="Cmd_NewMarkdown" xml:space="preserve"><value>Nuevo documento Markdown</value></data>
+  <data name="Cmd_Open" xml:space="preserve"><value>Abrir…</value></data>
+  <data name="Cmd_Recent" xml:space="preserve"><value>Recientes</value></data>
+  <data name="Cmd_Save" xml:space="preserve"><value>Guardar</value></data>
+  <data name="Cmd_SaveAs" xml:space="preserve"><value>Guardar como…</value></data>
+  <data name="Cmd_SaveAll" xml:space="preserve"><value>Guardar todo</value></data>
+  <data name="Cmd_Export" xml:space="preserve"><value>Exportar</value></data>
+  <data name="Cmd_ExportHtml" xml:space="preserve"><value>Exportar a HTML…</value></data>
+  <data name="Cmd_ExportPdf" xml:space="preserve"><value>Exportar a PDF…</value></data>
+  <data name="Cmd_CopyHtml" xml:space="preserve"><value>Copiar como HTML</value></data>
+  <data name="Cmd_CloseTab" xml:space="preserve"><value>Cerrar pestaña</value></data>
+  <data name="Cmd_ReopenTab" xml:space="preserve"><value>Reabrir pestaña cerrada</value></data>
+  <data name="Cmd_Settings" xml:space="preserve"><value>Configuración</value></data>
+  <data name="Cmd_Exit" xml:space="preserve"><value>Salir</value></data>
+  <data name="Cmd_Undo" xml:space="preserve"><value>Deshacer</value></data>
+  <data name="Cmd_Redo" xml:space="preserve"><value>Rehacer</value></data>
+  <data name="Cmd_Cut" xml:space="preserve"><value>Cortar</value></data>
+  <data name="Cmd_Copy" xml:space="preserve"><value>Copiar</value></data>
+  <data name="Cmd_Paste" xml:space="preserve"><value>Pegar</value></data>
+  <data name="Cmd_SelectAll" xml:space="preserve"><value>Seleccionar todo</value></data>
+  <data name="Cmd_Find" xml:space="preserve"><value>Buscar</value></data>
+  <data name="Cmd_Replace" xml:space="preserve"><value>Reemplazar</value></data>
+  <data name="Cmd_GoToLine" xml:space="preserve"><value>Ir a línea…</value></data>
+  <data name="Cmd_DuplicateLine" xml:space="preserve"><value>Duplicar línea</value></data>
+  <data name="Cmd_DeleteLine" xml:space="preserve"><value>Eliminar línea</value></data>
+  <data name="Cmd_MoveLineUp" xml:space="preserve"><value>Mover línea arriba</value></data>
+  <data name="Cmd_MoveLineDown" xml:space="preserve"><value>Mover línea abajo</value></data>
+  <data name="Cmd_Uppercase" xml:space="preserve"><value>Convertir a MAYÚSCULAS</value></data>
+  <data name="Cmd_Lowercase" xml:space="preserve"><value>Convertir a minúsculas</value></data>
+  <data name="Cmd_Indent" xml:space="preserve"><value>Aumentar sangría</value></data>
+  <data name="Cmd_Outdent" xml:space="preserve"><value>Reducir sangría</value></data>
+  <data name="Cmd_IndentToSpaces" xml:space="preserve"><value>Convertir sangría a espacios</value></data>
+  <data name="Cmd_IndentToTabs" xml:space="preserve"><value>Convertir sangría a tabulaciones</value></data>
+  <data name="Cmd_TrimTrailing" xml:space="preserve"><value>Quitar espacios al final de las líneas</value></data>
+  <data name="Cmd_ZoomIn" xml:space="preserve"><value>Acercar</value></data>
+  <data name="Cmd_ZoomOut" xml:space="preserve"><value>Alejar</value></data>
+  <data name="Cmd_ZoomReset" xml:space="preserve"><value>Restablecer zoom</value></data>
+  <data name="Cmd_WordWrap" xml:space="preserve"><value>Ajuste de línea</value></data>
+  <data name="Cmd_LineNumbers" xml:space="preserve"><value>Números de línea</value></data>
+  <data name="Cmd_StatusBar" xml:space="preserve"><value>Barra de estado</value></data>
+  <data name="Cmd_ViewEditor" xml:space="preserve"><value>Solo edición</value></data>
+  <data name="Cmd_ViewSplit" xml:space="preserve"><value>Vista dividida</value></data>
+  <data name="Cmd_ViewPreview" xml:space="preserve"><value>Solo vista previa</value></data>
+  <data name="Cmd_Outline" xml:space="preserve"><value>Tabla de contenidos</value></data>
+  <data name="Cmd_Heading" xml:space="preserve"><value>Encabezado</value></data>
+  <data name="Cmd_HeadingLevel" xml:space="preserve"><value>Encabezado {0}</value></data>
+  <data name="Cmd_HeadingNone" xml:space="preserve"><value>Texto normal</value></data>
+  <data name="Cmd_Bold" xml:space="preserve"><value>Negrita</value></data>
+  <data name="Cmd_Italic" xml:space="preserve"><value>Cursiva</value></data>
+  <data name="Cmd_Strikethrough" xml:space="preserve"><value>Tachado</value></data>
+  <data name="Cmd_InlineCode" xml:space="preserve"><value>Código en línea</value></data>
+  <data name="Cmd_Link" xml:space="preserve"><value>Enlace…</value></data>
+  <data name="Cmd_Image" xml:space="preserve"><value>Imagen…</value></data>
+  <data name="Cmd_BulletList" xml:space="preserve"><value>Lista con viñetas</value></data>
+  <data name="Cmd_NumberedList" xml:space="preserve"><value>Lista numerada</value></data>
+  <data name="Cmd_TaskList" xml:space="preserve"><value>Lista de tareas</value></data>
+  <data name="Cmd_Quote" xml:space="preserve"><value>Cita</value></data>
+  <data name="Cmd_CodeBlock" xml:space="preserve"><value>Bloque de código</value></data>
+  <data name="Cmd_Table" xml:space="preserve"><value>Tabla</value></data>
+  <data name="Cmd_HorizontalRule" xml:space="preserve"><value>Separador horizontal</value></data>
+  <data name="Tip_Open" xml:space="preserve"><value>Abrir (Ctrl+O)</value></data>
+  <data name="Tip_Save" xml:space="preserve"><value>Guardar (Ctrl+S)</value></data>
+  <data name="Tip_Undo" xml:space="preserve"><value>Deshacer (Ctrl+Z)</value></data>
+  <data name="Tip_Redo" xml:space="preserve"><value>Rehacer (Ctrl+Y)</value></data>
+  <data name="Tip_Find" xml:space="preserve"><value>Buscar (Ctrl+F)</value></data>
+  <data name="Tip_Bold" xml:space="preserve"><value>Negrita (Ctrl+B)</value></data>
+  <data name="Tip_Italic" xml:space="preserve"><value>Cursiva (Ctrl+I)</value></data>
+  <data name="Tip_Link" xml:space="preserve"><value>Enlace (Ctrl+K)</value></data>
+  <data name="Table_Rows" xml:space="preserve"><value>Filas</value></data>
+  <data name="Table_Columns" xml:space="preserve"><value>Columnas</value></data>
+  <data name="Table_Insert" xml:space="preserve"><value>Insertar tabla</value></data>
+  <data name="Workspace_Name" xml:space="preserve"><value>Tipo de editor</value></data>
+  <data name="Workspace_Text" xml:space="preserve"><value>Texto</value></data>
+  <data name="Workspace_Markdown" xml:space="preserve"><value>Markdown</value></data>
+  <data name="Recent_Empty" xml:space="preserve"><value>No hay archivos recientes</value></data>
+  <data name="Recent_Clear" xml:space="preserve"><value>Borrar la lista</value></data>
+  <data name="Drop_Open" xml:space="preserve"><value>Abrir en una pestaña</value></data>
+  <data name="Settings_Title" xml:space="preserve"><value>Configuración</value></data>
+  <data name="Settings_Back" xml:space="preserve"><value>Volver al editor (Esc)</value></data>
+  <data name="Settings_Appearance" xml:space="preserve"><value>Apariencia</value></data>
+  <data name="Settings_Editor" xml:space="preserve"><value>Editor</value></data>
+  <data name="Settings_General" xml:space="preserve"><value>General</value></data>
+  <data name="Settings_About" xml:space="preserve"><value>Acerca de</value></data>
+  <data name="Set_Theme" xml:space="preserve"><value>Tema</value></data>
+  <data name="Theme_System" xml:space="preserve"><value>Usar el de Windows</value></data>
+  <data name="Theme_Light" xml:space="preserve"><value>Claro</value></data>
+  <data name="Theme_Dark" xml:space="preserve"><value>Oscuro</value></data>
+  <data name="Set_Backdrop" xml:space="preserve"><value>Material de fondo</value></data>
+  <data name="Set_Backdrop_Desc" xml:space="preserve"><value>Efecto translúcido de la ventana.</value></data>
+  <data name="Backdrop_Mica" xml:space="preserve"><value>Mica</value></data>
+  <data name="Backdrop_MicaAlt" xml:space="preserve"><value>Mica alternativo</value></data>
+  <data name="Backdrop_Acrylic" xml:space="preserve"><value>Acrílico</value></data>
+  <data name="Backdrop_None" xml:space="preserve"><value>Ninguno (color sólido)</value></data>
+  <data name="Set_VisualOnly" xml:space="preserve"><value>La fuente, el tamaño y el zoom son preferencias de visualización del editor. Los archivos de texto no guardan formato: su contenido nunca se modifica al cambiarlas.</value></data>
+  <data name="Set_FontFamily" xml:space="preserve"><value>Fuente del editor</value></data>
+  <data name="Set_FontFamily_Desc" xml:space="preserve"><value>Se recomiendan las monoespaciadas para datos y código; las proporcionales, para prosa.</value></data>
+  <data name="Set_MonospacedOnly" xml:space="preserve"><value>Solo monoespaciadas</value></data>
+  <data name="Set_FontSize" xml:space="preserve"><value>Tamaño de fuente</value></data>
+  <data name="Set_DefaultZoom" xml:space="preserve"><value>Zoom predeterminado</value></data>
+  <data name="Set_DefaultZoom_Desc" xml:space="preserve"><value>Porcentaje con el que se abren los documentos.</value></data>
+  <data name="Set_WordWrap_Desc" xml:space="preserve"><value>Las líneas largas continúan en la siguiente en vez de salirse de la ventana.</value></data>
+  <data name="Set_DefaultEncoding" xml:space="preserve"><value>Codificación predeterminada</value></data>
+  <data name="Set_DefaultEncoding_Desc" xml:space="preserve"><value>Para documentos nuevos. Los archivos existentes conservan la suya.</value></data>
+  <data name="Set_DefaultLineEnding" xml:space="preserve"><value>Salto de línea predeterminado</value></data>
+  <data name="Set_DefaultLineEnding_Desc" xml:space="preserve"><value>Para documentos nuevos. Los archivos existentes conservan el suyo.</value></data>
+  <data name="Set_InsertSpaces" xml:space="preserve"><value>Insertar espacios con la tecla Tab</value></data>
+  <data name="Set_InsertSpaces_Desc" xml:space="preserve"><value>Si se desactiva, se inserta un carácter de tabulación.</value></data>
+  <data name="Set_TabSize" xml:space="preserve"><value>Tamaño de tabulación</value></data>
+  <data name="Set_AutoIndent" xml:space="preserve"><value>Sangría automática</value></data>
+  <data name="Set_AutoIndent_Desc" xml:space="preserve"><value>Al pulsar Intro, la línea nueva empieza con la sangría de la anterior.</value></data>
+  <data name="Set_AutoSave" xml:space="preserve"><value>Guardado automático</value></data>
+  <data name="Set_AutoSave_Desc" xml:space="preserve"><value>Guarda los archivos que ya tienen nombre unos segundos después de cada cambio.</value></data>
+  <data name="Set_ViewMode" xml:space="preserve"><value>Vista inicial</value></data>
+  <data name="Set_ViewMode_Desc" xml:space="preserve"><value>Cómo se abren los documentos Markdown.</value></data>
+  <data name="ViewMode_Editor" xml:space="preserve"><value>Solo edición</value></data>
+  <data name="ViewMode_Split" xml:space="preserve"><value>Vista dividida</value></data>
+  <data name="ViewMode_Preview" xml:space="preserve"><value>Solo vista previa</value></data>
+  <data name="Set_SyncScroll" xml:space="preserve"><value>Sincronizar desplazamiento</value></data>
+  <data name="Set_SyncScroll_Desc" xml:space="preserve"><value>La vista previa sigue al editor en la vista dividida.</value></data>
+  <data name="Set_PreviewStyle" xml:space="preserve"><value>Estilo de la vista previa</value></data>
+  <data name="PreviewStyle_Default" xml:space="preserve"><value>Predeterminado</value></data>
+  <data name="PreviewStyle_Serif" xml:space="preserve"><value>Lectura (con serifa)</value></data>
+  <data name="PreviewStyle_Compact" xml:space="preserve"><value>Compacto</value></data>
+  <data name="Set_PreviewFontSize" xml:space="preserve"><value>Tamaño del texto de la vista previa</value></data>
+  <data name="Set_CodeHighlighting" xml:space="preserve"><value>Resaltar bloques de código</value></data>
+  <data name="Set_CodeHighlighting_Desc" xml:space="preserve"><value>Colorea el código de los lenguajes conocidos en la vista previa y al exportar.</value></data>
+  <data name="Set_SyntaxHighlighting" xml:space="preserve"><value>Resaltar la sintaxis Markdown en el editor</value></data>
+  <data name="Set_SyntaxHighlighting_Desc" xml:space="preserve"><value>Se desactiva automáticamente en documentos muy extensos.</value></data>
+  <data name="Set_RemoteImages" xml:space="preserve"><value>Cargar imágenes de Internet</value></data>
+  <data name="Set_RemoteImages_Desc" xml:space="preserve"><value>Desactivado, la vista previa solo muestra imágenes locales y no hace ninguna conexión.</value></data>
+  <data name="Set_Language" xml:space="preserve"><value>Idioma de la interfaz</value></data>
+  <data name="Set_Language_Desc" xml:space="preserve"><value>Idioma de menús y mensajes.</value></data>
+  <data name="Language_System" xml:space="preserve"><value>Usar el de Windows</value></data>
+  <data name="Set_Language_Restart" xml:space="preserve"><value>El idioma cambiará la próxima vez que abras Memos.</value></data>
+  <data name="Set_StartupDocument" xml:space="preserve"><value>Documento al iniciar</value></data>
+  <data name="Set_StartupDocument_Desc" xml:space="preserve"><value>Tipo del documento en blanco que se crea cuando no hay nada que abrir.</value></data>
+  <data name="Startup_Text" xml:space="preserve"><value>Texto</value></data>
+  <data name="Startup_Markdown" xml:space="preserve"><value>Markdown</value></data>
+  <data name="Set_RestoreSession" xml:space="preserve"><value>Restaurar la sesión anterior</value></data>
+  <data name="Set_RestoreSession_Desc" xml:space="preserve"><value>Al abrir, recupera las pestañas, incluidos los cambios sin guardar. Con esta opción no se pregunta al cerrar la ventana.</value></data>
+  <data name="Set_ShowRecent" xml:space="preserve"><value>Mostrar archivos recientes en el menú Archivo</value></data>
+  <data name="Set_ConfirmClose" xml:space="preserve"><value>Confirmar al cerrar documentos modificados</value></data>
+  <data name="Set_ConfirmClose_Desc" xml:space="preserve"><value>Si se desactiva, cerrar una pestaña descarta sus cambios sin preguntar (se puede reabrir con Ctrl+Mayús+T).</value></data>
+  <data name="Set_Associations" xml:space="preserve"><value>Asociaciones de archivos</value></data>
+  <data name="Set_Associations_Desc" xml:space="preserve"><value>Memos nunca cambia qué programa abre tus archivos. Puedes elegirlo tú en la Configuración de Windows.</value></data>
+  <data name="Set_Associations_Button" xml:space="preserve"><value>Abrir aplicaciones predeterminadas</value></data>
+  <data name="About_Privacy" xml:space="preserve"><value>Funciona sin conexión. Sin telemetría, sin cuentas, sin publicidad y sin inteligencia artificial.</value></data>
+  <data name="About_Version" xml:space="preserve"><value>Versión {0}</value></data>
+</root>

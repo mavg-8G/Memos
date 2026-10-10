@@ -1,0 +1,126 @@
+# Arquitectura de Memos
+
+## Visión general
+
+La solución separa la lógica de la interfaz en dos ensamblados:
+
+| Proyecto | Contenido | Depende de |
+|---|---|---|
+| `Memos.Core` (`net10.0`) | Modelos, servicios, operaciones de texto, Markdown y **ViewModels**. No referencia WinUI. | CommunityToolkit.Mvvm, Markdig, ColorCode |
+| `Memos` (`net10.0-windows`) | Vistas XAML, servicios que necesitan la ventana (diálogos, selectores, tema, WebView2), recursos. | `Memos.Core`, Windows App SDK |
+| `Memos.Tests` | Pruebas xUnit sobre `Memos.Core` con dobles de los servicios de interfaz. | `Memos.Core` |
+| `Memos (Package)` | Empaquetado MSIX. | `Memos` |
+
+Como los ViewModels viven en `Memos.Core` y hablan con la interfaz solo a través de interfaces (`IDialogService`, `IFilePickerService`, `IEditorSurface`, `IPdfExporter`…), flujos como «cerrar con cambios pendientes» o «recuperar sesión» se prueban sin abrir ninguna ventana.
+
+```
+Views (XAML + code-behind mínimo)
+   │  x:Bind, comandos
+ViewModels  MainViewModel ── DocumentViewModel ── FindReplaceViewModel
+   │  interfaces
+Services    IFileService · ISettingsService · ISessionService · IRecentFilesService
+            ISearchService · IMarkdownService · (UI) IDialogService · IFilePickerService …
+Helpers     TextOperations · TextDiff · UndoHistory · LineIndex · TextStatistics · Debouncer
+Models      AppSettings · TextEdit · LoadedText · SessionState …
+```
+
+La composición está en `App.xaml.cs` (`ConfigureServices`) con `Microsoft.Extensions.DependencyInjection`. `Program.cs` define `Main` para la instancia única: un segundo proceso redirige su activación al primero y termina.
+
+## El texto: una sola tubería
+
+El documento tiene una representación canónica: una cadena con `\n` como único separador de línea, en `DocumentViewModel.Text`. La codificación y el tipo de salto de línea son metadatos que solo se aplican al leer y al escribir (`FileService`, `TextEncodings`, `LineEndings`).
+
+Toda modificación recorre el mismo camino:
+
+1. **Origen.** El usuario escribe en el control, o un comando produce un `TextEdit` (rango, texto nuevo, selección resultante) mediante una función pura de `TextOperations` o `MarkdownFormatting`.
+2. **Aplicación.** Con editor adjunto, `IEditorSurface.ApplyEdit` reemplaza el rango en el control; sin él (pruebas, pestañas restauradas aún no mostradas) el ViewModel aplica el cambio a la cadena.
+3. **Confirmación.** `DocumentViewModel.CommitText` calcula la diferencia mínima (`TextDiff`), la registra en `UndoHistory`, invalida el índice de líneas y programa estadísticas, análisis Markdown y búsqueda.
+
+`TextDiff` nunca corta un par suplente, y columnas y recuentos se calculan por grafemas (`StringInfo`), no por unidades UTF-16.
+
+### Deshacer
+
+`UndoHistory` guarda reemplazos (posición, texto quitado, texto insertado). La escritura consecutiva se fusiona por palabras, los borrados consecutivos también, y los comandos son siempre un paso propio. El estado «modificado» sale de comparar el paso actual con el paso guardado, así que deshacer hasta el punto de guardado limpia el indicador.
+
+El historial es propio (el del control está desactivado) por una razón concreta: el resaltado de sintaxis y el de búsqueda se aplican como formato de caracteres en el RichEditBox, y con el historial nativo cada recoloreado sería un paso de «deshacer».
+
+## El control de edición
+
+`EditorControl` envuelve un `RichEditBox` usado como editor de texto plano:
+
+- pegado siempre como texto plano, copia en texto plano, atajos de formato enriquecido bloqueados;
+- canal de números de línea dibujado aparte, posicionado con `ITextRange.GetRect` (búsqueda binaria de la primera línea visible, así el coste no depende del tamaño del documento);
+- `ApplySyntaxRuns` y `ApplySearchHighlights` solo tocan formato, nunca texto.
+
+**Por qué RichEditBox.** Es el control nativo de WinUI 3 para texto editable de varias líneas y el que da de serie lo que la especificación exige: IME para chino, japonés y coreano, texto bidireccional, emojis en color, selección y accesibilidad (UI Automation). Las alternativas se descartaron: `TextBox` no permite resaltado; los editores dibujados a mano con Win2D pierden IME, bidi y accesibilidad; un editor web en WebView2 contradice el objetivo de aplicación nativa.
+
+**Su coste.** No virtualiza la maquetación: al cargar calcula la altura de todo el documento, y lo hace bastante más despacio cuando abundan los caracteres no ASCII. De ahí los límites de `FileLimits` (aviso a 2 MB, máximo 10 MB) y las mediciones del README. Tampoco expone caracteres invisibles ni el modo de sobrescritura.
+
+## Markdown
+
+`MarkdownService.Analyze` analiza el texto una sola vez con Markdig y devuelve un `MarkdownAnalysis`:
+
+- **Bloques**: cada bloque de primer nivel renderizado a HTML con su línea de origen.
+- **Encabezados**: para la tabla de contenidos.
+- **Tramos de sintaxis** (`SyntaxRun`): estilos sin solapamiento para el editor, obtenidos pintando el árbol de padres a hijos.
+
+El análisis corre en segundo plano con retardo; cada edición cancela el anterior (`Debouncer`).
+
+**Actualización incremental.**
+
+- *Vista previa*: `MarkdownPreview` compara la lista de bloques con la que ya muestra y reemplaza solo el tramo central distinto. El desplazamiento se conserva y escribir no redibuja el documento.
+- *Editor*: `HighlightPlanner` compara tramos antiguos y nuevos teniendo en cuenta el desplazamiento producido por la edición y devuelve el rango a recolorear. Escribir en un párrafo recolorea esa edición; abrir un bloque de código recolorea lo que el bloque se traga.
+
+**Desplazamiento sincronizado.** Cada bloque lleva `data-line`; el editor informa de su primera línea visible (con fracción) y la vista previa interpola entre el bloque que la contiene y el siguiente.
+
+### Seguridad de la vista previa
+
+El contenido de un documento se trata como no confiable, con varias capas:
+
+1. Markdig con `DisableHtml()`: el HTML en bruto se escapa.
+2. Lista blanca de esquemas en enlaces e imágenes (`MarkdownService.IsSafeUrl`).
+3. WebView2 con `IsScriptEnabled = false`. La aplicación actualiza la página con `ExecuteScriptAsync`, que no depende de ese ajuste.
+4. CSP `default-src 'none'`: solo estilos en línea e imágenes de la carpeta del documento (servida por un host virtual), `data:` y, si el usuario lo activa, remotas.
+5. Navegación interceptada: la vista previa nunca navega; los enlaces web se abren en el navegador y los archivos locales, como pestaña.
+6. Permisos, descargas, ventanas nuevas, autocompletado y herramientas de desarrollo desactivados; argumentos de arranque que evitan tráfico de fondo.
+
+El WebView2 se crea la primera vez que se muestra una vista previa: una sesión solo de texto no arranca ningún proceso de navegador.
+
+### Exportación
+
+`HtmlDocumentBuilder` genera el documento HTML completo (CSS incrustado, sin scripts, claro/oscuro con `prefers-color-scheme`). El PDF se imprime desde un WebView2 temporal e invisible (`WebViewPdfExporter`) con `PrintToPdfAsync`, siempre en tema claro.
+
+## Persistencia
+
+Archivos JSON en `%LOCALAPPDATA%\Memos` (en el paquete MSIX, Windows los redirige al almacén de la aplicación, por lo que desinstalar los elimina):
+
+- `settings.json` — `AppSettings` es un `ObservableObject`; `JsonSettingsService` guarda con retardo tras cada cambio y las vistas reaccionan a `PropertyChanged`.
+- `recent.json` — archivos recientes.
+- `Session/` — `session.json` más una copia `.bak` por documento con cambios sin guardar. Solo se reescriben las copias cuyo texto cambió.
+
+La serialización usa generadores de código de `System.Text.Json` (sin reflexión).
+
+## Guardado seguro
+
+`FileService.SaveAsync` escribe en un temporal junto al destino, vuelca a disco y sustituye con `File.Replace`. Si el sistema de archivos no admite el reemplazo, escribe directamente. Los archivos de solo lectura se rechazan antes de tocar nada. `MainViewModel.SaveDocumentAsync` comprueba además la marca de tiempo y tamaño registrados al leer.
+
+## Localización
+
+Los textos están en `Strings/<idioma>/Resources.resw`. El XAML los toma con la extensión de marcado `{h:Loc Key=…}` y el código con `ILocalizer`; ambos usan el `ResourceLoader` del Windows App SDK. El idioma elegido se aplica con `ApplicationLanguages.PrimaryLanguageOverride` antes de cargar ningún recurso.
+
+Para añadir un idioma: copiar una carpeta de `Strings`, traducir los valores, añadir la opción en `SettingsPage.xaml.cs` y declararlo en `Package.appxmanifest`.
+
+## Atajos de teclado
+
+Se resuelven en `MainWindow.OnPreviewKeyDown`, mientras el evento baja desde la raíz y antes de que lo vea el control enfocado. Así el orden frente al tratamiento de teclas del RichEditBox es determinista. Los atajos de edición solo se aplican con el foco en el editor; con un diálogo abierto no se aplica ninguno.
+
+## Pruebas
+
+- **Unitarias** (`Memos.Tests`): servicios y funciones puras con archivos temporales reales, y ViewModels con dobles de diálogos y selectores.
+- **No automatizadas**: las vistas, el RichEditBox y el WebView2 (incluida la impresión a PDF, cuya parte de generación de HTML sí está cubierta).
+
+## Cómo extender
+
+- **Nuevo comando de edición**: función pura en `TextOperations` que devuelve `TextEdit?`, método en `DocumentViewModel`, `[RelayCommand]` en `MainViewModel`, entrada de menú y prueba.
+- **Nueva codificación**: valor en `TextEncodingId` y casos en `TextEncodings`.
+- **Nuevo ajuste**: propiedad en `AppSettings`, tarjeta en `SettingsPage.xaml` y cadenas en ambos `.resw`.
