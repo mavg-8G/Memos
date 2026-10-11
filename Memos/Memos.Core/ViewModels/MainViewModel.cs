@@ -21,6 +21,7 @@ public partial class MainViewModel : ObservableObject
     private readonly IFilePickerService _pickers;
     private readonly IClipboardService _clipboard;
     private readonly IPdfExporter _pdf;
+    private readonly IPrintService _print;
     private readonly IMarkdownService _markdown;
     private readonly ILocalizer _loc;
     private readonly IErrorLog _errorLog;
@@ -32,10 +33,11 @@ public partial class MainViewModel : ObservableObject
 
     public MainViewModel(
         ISettingsService settings, IFileService files, IRecentFilesService recent, ISessionService session,
-        IDialogService dialogs, IFilePickerService pickers, IClipboardService clipboard, IPdfExporter pdf,
+        IDialogService dialogs, IFilePickerService pickers, IClipboardService clipboard, IPdfExporter pdf, IPrintService print,
         ISearchService search, IMarkdownService markdown, ILocalizer localizer, IErrorLog errorLog)
     {
         _errorLog = errorLog;
+        _print = print;
         GlobalSearch = new GlobalSearchViewModel(() => Documents, document => ActiveDocument = document, search, dialogs, localizer);
         HasErrorLog = errorLog.HasEntries;
         _files = files;
@@ -477,16 +479,39 @@ public partial class MainViewModel : ObservableObject
         ActiveDocument?.Editor?.Focus();
     }
 
-    /// <summary>Converting to RTF keeps the text and leaves the original file untouched.</summary>
+    /// <summary>
+    /// Converting to or from RTF keeps the text and leaves the original file untouched. Leaving RTF
+    /// drops the formatting, so it asks first when there is any to lose.
+    /// </summary>
     [RelayCommand(CanExecute = nameof(HasDocument))]
-    private void SetKind(DocumentKind kind)
+    private async Task SetKindAsync(DocumentKind kind)
     {
-        if (ActiveDocument is { } document && document.Kind != kind)
+        if (ActiveDocument is not { } document || document.Kind == kind)
         {
-            if (kind == DocumentKind.RichText) document.ConvertToRichText();
-            else if (!document.IsRichText) document.Kind = kind;
+            return;
+        }
+
+        if (kind == DocumentKind.RichText)
+        {
+            document.ConvertToRichText();
+        }
+        else if (!document.IsRichText)
+        {
+            document.Kind = kind;
+        }
+        else if (!document.HasRichFormatting || await _dialogs.ConfirmAsync(_loc.Get("Msg_DropFormatting_Title"),
+                     _loc.Get("Msg_DropFormatting"), _loc.Get("Btn_DropFormatting"), _loc.Get("Btn_Cancel")))
+        {
+            document.ConvertToPlainText(kind);
         }
     }
+
+    private bool CanToggleFormatting => HasDocument && !IsMarkdownActive;
+
+    /// <summary>The formatting switch of the text workspace: plain text on one side, RTF on the other.</summary>
+    [RelayCommand(CanExecute = nameof(CanToggleFormatting))]
+    private Task ToggleFormattingAsync() =>
+        SetKindAsync(IsRichTextActive ? DocumentKind.Text : DocumentKind.RichText);
 
     [RelayCommand(CanExecute = nameof(IsMarkdownActive))]
     private void SetViewMode(MarkdownViewMode mode)
@@ -685,23 +710,23 @@ public partial class MainViewModel : ObservableObject
         var document = ActiveDocument!;
         try
         {
-            var html = document.IsMarkdown ? BuildExportHtml(document, forPdf: true)
-                : document.IsRichText ? RichTextPrintHtml.BuildPage(document.DisplayName, document.RichText)
-                : BuildPlainPrintHtml(document);
-            await _pdf.PrintAsync(html, document.Directory, document.DisplayName);
+            if (document.IsMarkdown)
+            {
+                await _print.PrintMarkdownAsync(document.DisplayName, MarkdownPrintBuilder.Build(document.Text), document.Directory);
+            }
+            else if (document.IsRichText)
+            {
+                await _print.PrintTextAsync(document.DisplayName, RichTextCodec.Parse(document.RichText), monospaced: false);
+            }
+            else
+            {
+                await _print.PrintTextAsync(document.DisplayName, [new RichTextRun(document.Text)], monospaced: true);
+            }
         }
         catch (Exception ex) when (FileService.IsFileSystemError(ex) || ex is InvalidOperationException or TimeoutException or System.Runtime.InteropServices.COMException)
         {
             await _dialogs.ShowMessageAsync(_loc.Get("Msg_Error_Title"), _loc.Format("Msg_PrintError", ex.Message));
         }
-    }
-
-    private static string BuildPlainPrintHtml(DocumentViewModel document)
-    {
-        var title = System.Net.WebUtility.HtmlEncode(document.DisplayName);
-        var text = System.Net.WebUtility.HtmlEncode(document.Text);
-        return "<!doctype html><html><head><meta charset=\"utf-8\"><title>" + title +
-            "</title><style>@page{margin:18mm}body{font:11pt Consolas,monospace;color:#111}pre{white-space:pre-wrap;overflow-wrap:anywhere}</style></head><body><pre>" + text + "</pre></body></html>";
     }
 
     [RelayCommand(CanExecute = nameof(IsMarkdownActive))]
@@ -1271,7 +1296,7 @@ public partial class MainViewModel : ObservableObject
                      PasteCommand, SelectAllCommand, FindCommand, ReplaceCommand, GoToLineCommand, DuplicateLineCommand, DeleteLineCommand,
                      MoveLineUpCommand, MoveLineDownCommand, UppercaseCommand, LowercaseCommand, TrimTrailingWhitespaceCommand,
                      IndentCommand, OutdentCommand, IndentationToSpacesCommand, IndentationToTabsCommand, ZoomInCommand, ZoomOutCommand,
-                     ResetZoomCommand, SetKindCommand, SetViewModeCommand, ToggleOutlineCommand, SetEncodingCommand,
+                     ResetZoomCommand, SetKindCommand, ToggleFormattingCommand, SetViewModeCommand, ToggleOutlineCommand, SetEncodingCommand,
                      ReopenWithEncodingCommand, SetLineEndingCommand, ToggleOverwriteCommand, BoldCommand, ItalicCommand, UnderlineCommand, StrikethroughCommand, InlineCodeCommand,
                      HeadingCommand, QuoteCommand, BulletListCommand, NumberedListCommand, TaskListCommand, CodeBlockCommand,
                      HorizontalRuleCommand, LinkCommand, ImageCommand, ExportHtmlCommand, ExportPdfCommand, PrintCommand, CopyHtmlCommand,

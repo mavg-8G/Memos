@@ -36,7 +36,7 @@
   <data name="Msg_AlreadyOpen" xml:space="preserve"><value>«{0}» ya está abierto en otra pestaña. Elige otro nombre.</value></data>
   <data name="Msg_ExportError" xml:space="preserve"><value>No se pudo exportar el documento.
 {0}</value></data>
-  <data name="Msg_PrintError" xml:space="preserve"><value>No se pudo abrir la impresión.
+  <data name="Msg_PrintError" xml:space="preserve"><value>No se pudo imprimir el documento.
 {0}</value></data>
   <data name="Msg_LossyEncoding_Title" xml:space="preserve"><value>Se perderían caracteres</value></data>
   <data name="Msg_LossyEncoding" xml:space="preserve"><value>El documento contiene caracteres que {0} no puede representar. Si lo guardas con esa codificación se sustituirán por «?» y no podrán recuperarse.</value></data>
@@ -187,7 +187,11 @@
   <data name="Workspace_Name" xml:space="preserve"><value>Tipo de editor</value></data>
   <data name="Workspace_Text" xml:space="preserve"><value>Texto</value></data>
   <data name="Workspace_Markdown" xml:space="preserve"><value>Markdown</value></data>
-  <data name="Workspace_RichText" xml:space="preserve"><value>Con formato</value></data>
+  <data name="Cmd_Formatting" xml:space="preserve"><value>Formato (RTF)</value></data>
+  <data name="Tip_Formatting" xml:space="preserve"><value>Formato: negrita, cursiva y subrayado; se guarda como .rtf</value></data>
+  <data name="Msg_DropFormatting_Title" xml:space="preserve"><value>¿Quitar el formato?</value></data>
+  <data name="Msg_DropFormatting" xml:space="preserve"><value>El documento pasará a ser texto sin formato. Se perderán sus fuentes, tamaños, colores y estilos; el texto se conserva. El archivo .rtf guardado no se modifica.</value></data>
+  <data name="Btn_DropFormatting" xml:space="preserve"><value>Quitar formato</value></data>
   <data name="Recent_Empty" xml:space="preserve"><value>No hay archivos recientes</value></data>
   <data name="Recent_Clear" xml:space="preserve"><value>Borrar la lista</value></data>
   <data name="Drop_Open" xml:space="preserve"><value>Abrir en una pestaña</value></data>

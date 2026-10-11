@@ -41,7 +41,7 @@ public interface IMarkdownService
 public sealed class MarkdownService : IMarkdownService
 {
     // Raw HTML is disabled on purpose: whatever the document contains is shown as text, never executed.
-    private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder()
+    internal static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder()
         .UsePipeTables()
         .UseTaskLists()
         .UseAutoLinks()

@@ -36,7 +36,7 @@
   <data name="Msg_AlreadyOpen" xml:space="preserve"><value>&quot;{0}&quot; is already open in another tab. Choose a different name.</value></data>
   <data name="Msg_ExportError" xml:space="preserve"><value>The document could not be exported.
 {0}</value></data>
-  <data name="Msg_PrintError" xml:space="preserve"><value>The print preview could not be opened.
+  <data name="Msg_PrintError" xml:space="preserve"><value>The document could not be printed.
 {0}</value></data>
   <data name="Msg_LossyEncoding_Title" xml:space="preserve"><value>Characters would be lost</value></data>
   <data name="Msg_LossyEncoding" xml:space="preserve"><value>The document contains characters that {0} cannot represent. If you save it with that encoding they will be replaced by &quot;?&quot; and cannot be recovered.</value></data>
@@ -187,7 +187,11 @@
   <data name="Workspace_Name" xml:space="preserve"><value>Editor type</value></data>
   <data name="Workspace_Text" xml:space="preserve"><value>Text</value></data>
   <data name="Workspace_Markdown" xml:space="preserve"><value>Markdown</value></data>
-  <data name="Workspace_RichText" xml:space="preserve"><value>Rich text</value></data>
+  <data name="Cmd_Formatting" xml:space="preserve"><value>Formatting (RTF)</value></data>
+  <data name="Tip_Formatting" xml:space="preserve"><value>Formatting: bold, italic and underline, saved as .rtf</value></data>
+  <data name="Msg_DropFormatting_Title" xml:space="preserve"><value>Remove the formatting?</value></data>
+  <data name="Msg_DropFormatting" xml:space="preserve"><value>The document will become plain text. Its fonts, sizes, colours and styles will be lost; the text stays. A saved .rtf file is not changed.</value></data>
+  <data name="Btn_DropFormatting" xml:space="preserve"><value>Remove formatting</value></data>
   <data name="Recent_Empty" xml:space="preserve"><value>No recent files</value></data>
   <data name="Recent_Clear" xml:space="preserve"><value>Clear list</value></data>
   <data name="Drop_Open" xml:space="preserve"><value>Open in a tab</value></data>

@@ -279,14 +279,14 @@ public sealed partial class MemosApp : IDisposable
         Thread.Sleep(150);
     }
 
-    /// <summary>Visible top-level windows of the app other than the main one (the print preview, for instance).</summary>
-    public nint[] OtherWindows()
+    /// <summary>Visible top-level windows of the app other than the main one.</summary>
+    public nint[] OwnWindows()
     {
         var found = new List<nint>();
         EnumWindows((window, _) =>
         {
             GetWindowThreadProcessId(window, out var processId);
-            if (processId == (uint)_process.Id && window != _process.MainWindowHandle && IsWindowVisible(window))
+            if (processId == (uint)_process.Id && window != _process.MainWindowHandle && IsWindowVisible(window) && Title(window).Length > 0)
             {
                 found.Add(window);
             }
@@ -296,7 +296,28 @@ public sealed partial class MemosApp : IDisposable
         return [.. found];
     }
 
-    /// <summary>Asks any window of the app to close, as its X button does.</summary>
+    /// <summary>
+    /// Print dialogs of Windows open for a document. The dialog belongs to the system, not to the
+    /// app's process, and is titled with the name of the print job followed by a localized word.
+    /// </summary>
+    public nint[] PrintDialogs(string documentName)
+    {
+        var found = new List<nint>();
+        EnumWindows((window, _) =>
+        {
+            GetWindowThreadProcessId(window, out var processId);
+            if (processId != (uint)_process.Id && IsWindowVisible(window) &&
+                ClassName(window) == "ApplicationFrameWindow" && Title(window).StartsWith(documentName + " - ", StringComparison.Ordinal))
+            {
+                found.Add(window);
+            }
+
+            return true;
+        }, 0);
+        return [.. found];
+    }
+
+    /// <summary>Asks any window to close, as its X button does.</summary>
     public static void CloseWindow(nint window) => PostMessageW(window, 0x0010 /* WM_CLOSE */, 0, 0);
 
     /// <summary>Asks the window to close, as the X button does.</summary>
@@ -378,9 +399,7 @@ public sealed partial class MemosApp : IDisposable
         nint found = 0;
         EnumChildWindows(_process.MainWindowHandle, (window, _) =>
         {
-            var name = new char[64];
-            var length = GetClassNameW(window, name, name.Length);
-            if (new string(name, 0, length) == "InputSiteWindowClass")
+            if (ClassName(window) == "InputSiteWindowClass")
             {
                 found = window;
             }
@@ -388,6 +407,18 @@ public sealed partial class MemosApp : IDisposable
             return true;
         }, 0);
         return found != 0 ? found : throw new InvalidOperationException("The input window of Memos was not found.");
+    }
+
+    private static string ClassName(nint window)
+    {
+        var name = new char[64];
+        return new string(name, 0, GetClassNameW(window, name, name.Length));
+    }
+
+    private static string Title(nint window)
+    {
+        var title = new char[260];
+        return new string(title, 0, GetWindowTextW(window, title, title.Length));
     }
 
     private delegate bool EnumWindowsProc(nint window, nint parameter);
@@ -406,6 +437,9 @@ public sealed partial class MemosApp : IDisposable
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern int GetClassNameW(nint window, [Out] char[] name, int capacity);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern int GetWindowTextW(nint window, [Out] char[] title, int capacity);
 
     [DllImport("user32.dll")]
     private static extern bool PostMessageW(nint window, uint message, nint wParam, nint lParam);

@@ -42,6 +42,7 @@ public partial class DocumentViewModel : ObservableObject, IDisposable
     private bool _metadataModified;
     private string _richText = "";
     private string _savedRichText = "";
+    private string? _unformattedRichText;
 
     public DocumentViewModel(DocumentServices services, DocumentKind kind, string displayName)
     {
@@ -92,6 +93,13 @@ public partial class DocumentViewModel : ObservableObject, IDisposable
     public bool IsMarkdown => Kind == DocumentKind.Markdown;
 
     public bool IsRichText => Kind == DocumentKind.RichText;
+
+    /// <summary>
+    /// True when turning the formatting off would lose something: the document has text and is no
+    /// longer the plain text it was converted from.
+    /// </summary>
+    public bool HasRichFormatting =>
+        IsRichText && Text.Length > 0 && !string.Equals(_richText, _unformattedRichText, StringComparison.Ordinal);
 
     /// <summary>A new, empty, never-edited document; opening a file may take its place.</summary>
     public bool IsPristine => FilePath is null && !IsModified && Text.Length == 0;
@@ -159,6 +167,7 @@ public partial class DocumentViewModel : ObservableObject, IDisposable
     {
         _richText = rtf;
         _savedRichText = modified ? "" : rtf;
+        _unformattedRichText = null;
         if (Editor is IRichEditorSurface rich)
         {
             rich.LoadRichText(rtf);
@@ -183,11 +192,44 @@ public partial class DocumentViewModel : ObservableObject, IDisposable
         var pristine = IsPristine;
         _richText = RichTextCodec.FromPlainText(Text);
         _savedRichText = pristine ? _richText : "";
-        FilePath = null;
-        Stamp = null;
-        DisplayName = Path.GetFileNameWithoutExtension(DisplayName);
+        _unformattedRichText = _richText;
+        DetachFromFile();
         Kind = DocumentKind.RichText;
         UpdateHistoryState();
+    }
+
+    /// <summary>
+    /// Turns a rich document into plain text or Markdown. The text stays, the formatting is dropped
+    /// and the .rtf file, if there was one, is left as it is on disk.
+    /// </summary>
+    public void ConvertToPlainText(DocumentKind kind)
+    {
+        if (!IsRichText || kind == DocumentKind.RichText) return;
+
+        var pristine = IsPristine;
+        _richText = "";
+        _savedRichText = "";
+        _unformattedRichText = null;
+        DetachFromFile();
+
+        // The text was edited through the control's own history; this one no longer describes it.
+        _history.Clear();
+        if (!pristine) _history.MarkUnsaved();
+        _metadataModified = false;
+        _pendingChange = null;
+        Kind = kind;
+        UpdateHistoryState();
+    }
+
+    /// <summary>The name of a file stays as the suggestion for the next save, without its extension.</summary>
+    private void DetachFromFile()
+    {
+        if (FilePath is not null) DisplayName = Path.GetFileNameWithoutExtension(DisplayName);
+        FilePath = null;
+        Stamp = null;
+
+        // The session backup holds the other format: it has to be written again.
+        BackupVersion = -1;
     }
 
     /// <summary>
@@ -197,8 +239,10 @@ public partial class DocumentViewModel : ObservableObject, IDisposable
     public void OnEditorRichTextLoaded(string text, string rtf)
     {
         var unmodified = string.Equals(_richText, _savedRichText, StringComparison.Ordinal);
+        var unformatted = string.Equals(_richText, _unformattedRichText, StringComparison.Ordinal);
         _richText = rtf;
         if (unmodified) _savedRichText = rtf;
+        if (unformatted) _unformattedRichText = rtf;
         _navigatingHistory = true;
         try { CommitText(text); }
         finally { _navigatingHistory = false; }

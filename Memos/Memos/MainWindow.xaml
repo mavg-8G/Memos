@@ -213,7 +213,10 @@
                     <MenuFlyoutItem Text="{h:Loc Key=Cmd_Table}" Click="OnInsertDefaultTableClick" />
                     <MenuFlyoutItem Text="{h:Loc Key=Cmd_HorizontalRule}" Command="{x:Bind ViewModel.HorizontalRuleCommand}" />
                 </MenuBarItem>
-                <MenuBarItem Title="{h:Loc Key=Menu_Format}" Visibility="{x:Bind h:Ui.Visible(ViewModel.IsRichTextActive), Mode=OneWay}">
+                <!-- Text workspace: formatting is a switch of the same editor, not a workspace of its own. -->
+                <MenuBarItem Title="{h:Loc Key=Menu_Format}" Visibility="{x:Bind h:Ui.Collapsed(ViewModel.IsMarkdownActive), Mode=OneWay}">
+                    <ToggleMenuFlyoutItem x:Name="FormattingMenuItem" Text="{h:Loc Key=Cmd_Formatting}" Click="OnFormattingClick" />
+                    <MenuFlyoutSeparator />
                     <MenuFlyoutItem Text="{h:Loc Key=Cmd_Bold}" Command="{x:Bind ViewModel.BoldCommand}" KeyboardAcceleratorTextOverride="Ctrl+B" />
                     <MenuFlyoutItem Text="{h:Loc Key=Cmd_Italic}" Command="{x:Bind ViewModel.ItalicCommand}" KeyboardAcceleratorTextOverride="Ctrl+I" />
                     <MenuFlyoutItem Text="{h:Loc Key=Cmd_Underline}" Command="{x:Bind ViewModel.UnderlineCommand}" KeyboardAcceleratorTextOverride="Ctrl+U" />
@@ -245,7 +248,11 @@
                     <AppBarButton.Icon><FontIcon Glyph="&#xE721;" /></AppBarButton.Icon>
                 </AppBarButton>
 
-                <AppBarSeparator Visibility="{x:Bind h:Ui.Visible(ViewModel.IsRichTextActive), Mode=OneWay}" />
+                <!-- Text workspace: the formatting switch and, while it is on, the character styles. -->
+                <AppBarSeparator Visibility="{x:Bind h:Ui.Collapsed(ViewModel.IsMarkdownActive), Mode=OneWay}" />
+                <AppBarToggleButton x:Name="FormattingButton" Label="{h:Loc Key=Cmd_Formatting}" ToolTipService.ToolTip="{h:Loc Key=Tip_Formatting}" Click="OnFormattingClick" Visibility="{x:Bind h:Ui.Collapsed(ViewModel.IsMarkdownActive), Mode=OneWay}">
+                    <AppBarToggleButton.Icon><FontIcon Glyph="&#xE8D2;" /></AppBarToggleButton.Icon>
+                </AppBarToggleButton>
                 <AppBarButton Label="{h:Loc Key=Cmd_Bold}" Command="{x:Bind ViewModel.BoldCommand}" Visibility="{x:Bind h:Ui.Visible(ViewModel.IsRichTextActive), Mode=OneWay}"><AppBarButton.Icon><FontIcon Glyph="&#xE8DD;" /></AppBarButton.Icon></AppBarButton>
                 <AppBarButton Label="{h:Loc Key=Cmd_Italic}" Command="{x:Bind ViewModel.ItalicCommand}" Visibility="{x:Bind h:Ui.Visible(ViewModel.IsRichTextActive), Mode=OneWay}"><AppBarButton.Icon><FontIcon Glyph="&#xE8DB;" /></AppBarButton.Icon></AppBarButton>
                 <AppBarButton Label="{h:Loc Key=Cmd_Underline}" Command="{x:Bind ViewModel.UnderlineCommand}" Visibility="{x:Bind h:Ui.Visible(ViewModel.IsRichTextActive), Mode=OneWay}"><AppBarButton.Icon><FontIcon Glyph="&#xE8DC;" /></AppBarButton.Icon></AppBarButton>
@@ -343,9 +350,6 @@
                 </SelectorBarItem>
                 <SelectorBarItem x:Name="MarkdownWorkspaceItem" Text="{h:Loc Key=Workspace_Markdown}">
                     <SelectorBarItem.Icon><FontIcon Glyph="&#xE8A1;" /></SelectorBarItem.Icon>
-                </SelectorBarItem>
-                <SelectorBarItem x:Name="RichTextWorkspaceItem" Text="{h:Loc Key=Workspace_RichText}">
-                    <SelectorBarItem.Icon><FontIcon Glyph="&#xE8D2;" /></SelectorBarItem.Icon>
                 </SelectorBarItem>
             </SelectorBar>
 

@@ -60,11 +60,13 @@ public class WindowTests
 
         // The Markdown tab is active: its tools are there and the file's LF endings were detected.
         Assert.NotNull(app.FindByName("Format", ControlType.MenuItem));
+        Assert.Null(app.TryFind("FormattingButton"));
         WaitForText(app, "LineEndingButton", "LF");
 
         app.SelectTab("notas.txt");
         WaitForText(app, "LineEndingButton", "CRLF");
-        MemosApp.Eventually(() => app.TryFindByName("Format", ControlType.MenuItem) is null, "the Format menu to disappear for plain text");
+        MemosApp.Eventually(() => app.TryFind("FormattingButton") is not null && app.TryFind("OutlineButton") is null,
+            "the Markdown tools to give way to the formatting switch of plain text");
     }
 
     [Fact]
@@ -347,10 +349,57 @@ public class WindowTests
     }
 
     [Theory]
+    [InlineData("Light")]
+    [InlineData("Dark")]
+    public void Formatting_is_a_switch_of_the_text_editor_that_can_be_turned_off_again(string theme)
+    {
+        using var app = MemosApp.Launch(
+            docs => [MemosApp.WriteDoc(docs, "nota.txt", "uno\r\ndos")],
+            $$"""{ "Language": "en-US", "Theme": "{{theme}}", "WindowWidth": 1200, "WindowHeight": 760 }""");
+        WaitForText(app, "CharactersText", "6 characters");
+
+        // On: the same tab becomes a rich document, without the plain-text status buttons.
+        app.Click("FormattingButton");
+        MemosApp.Eventually(() => app.TryFind("EncodingButton") is null, "the document to become rich text");
+        Assert.Equal(["nota"], app.TabNames());
+
+        // Off again with nothing formatted: there is nothing to lose, so nothing is asked.
+        app.Click("FormattingButton");
+        MemosApp.Eventually(() => app.TryFind("EncodingButton") is not null, "the document to become plain text again");
+        WaitForText(app, "CharactersText", "6 characters");
+
+        app.Click("FormattingButton");
+        MemosApp.Eventually(() => app.TryFind("EncodingButton") is null, "the document to become rich text");
+        app.Menu("Format", "Bold");
+        app.Type("N");
+        WaitForText(app, "CharactersText", "7 characters");
+
+        // Now there is formatting: leaving asks, and cancelling changes nothing.
+        app.Click("FormattingButton");
+        MemosApp.Invoke(app.FindByName("Cancel", ControlType.Button));
+        Thread.Sleep(700);
+        Assert.Null(app.TryFind("EncodingButton"));
+
+        app.Click("FormattingButton");
+        MemosApp.Invoke(app.FindByName("Remove formatting", ControlType.Button));
+        MemosApp.Eventually(() => app.TryFind("EncodingButton") is not null, "the document to become plain text again");
+        WaitForText(app, "CharactersText", "7 characters");
+
+        // It is a plain-text editor again, with its own undo history.
+        app.Type("Z");
+        WaitForText(app, "CharactersText", "8 characters");
+        app.Menu("Edit", "Undo");
+        WaitForText(app, "CharactersText", "7 characters");
+
+        Assert.False(app.HasExited);
+        Assert.Equal("uno\r\ndos", File.ReadAllText(app.Doc("nota.txt")));
+    }
+
+    [Theory]
     [InlineData("nota.txt", "uno\r\ndos")]
     [InlineData("nota.md", "# Título\n\ntexto")]
     [InlineData("nota.rtf", SampleRtf)]
-    public void Print_opens_a_preview_window_and_closing_it_leaves_nothing_behind(string name, string content)
+    public void Print_opens_the_print_dialog_of_windows_and_closing_it_leaves_nothing_behind(string name, string content)
     {
         using var app = MemosApp.Launch(docs => [MemosApp.WriteDoc(docs, name, content)]);
         var temp = Path.Combine(app.DataDirectory, "Temp");
@@ -358,13 +407,13 @@ public class WindowTests
         for (var round = 0; round < 2; round++)
         {
             app.Menu("File", "Print…");
-            MemosApp.Eventually(() => app.OtherWindows().Length == 1, "the print preview window to open");
-            MemosApp.Eventually(() => Directory.GetFiles(temp, "print-*.html").Length == 1, "the page to print to be prepared");
+            MemosApp.Eventually(() => app.PrintDialogs(name).Length == 1, "the print dialog of Windows to open");
+            Assert.Empty(app.OwnWindows());
             Thread.Sleep(2500);
 
-            MemosApp.CloseWindow(app.OtherWindows()[0]);
-            MemosApp.Eventually(() => app.OtherWindows().Length == 0, "the print preview window to close");
-            MemosApp.Eventually(() => Directory.GetFiles(temp, "print-*.html").Length == 0, "the temporary page to be deleted");
+            MemosApp.CloseWindow(app.PrintDialogs(name)[0]);
+            MemosApp.Eventually(() => app.PrintDialogs(name).Length == 0, "the print dialog to close");
+            MemosApp.Eventually(() => !Directory.Exists(temp) || Directory.GetFiles(temp, "print-*").Length == 0, "the temporary pages to be deleted");
         }
 
         Assert.False(app.HasExited);

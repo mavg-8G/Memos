@@ -28,10 +28,11 @@ Editor de texto, Markdown y RTF para Windows 11, nativo (C#, .NET 10, WinUI 3 / 
 
 **Texto enriquecido e impresión**
 
-- Un documento nuevo «Con formato» se guarda como `.rtf`. También se puede convertir una pestaña de texto o Markdown desde el selector de tipo de editor; el archivo original queda intacto y se pide un nombre `.rtf` al guardar.
+- El formato es un interruptor del editor de texto (botón «Formato» de la barra o Formato → Formato (RTF)), no un tipo de editor aparte: al activarlo la misma pestaña pasa a ser un documento con formato que se guarda como `.rtf`; al desactivarlo vuelve a ser texto sin formato. El archivo original queda intacto en ambos sentidos y se pide un nombre al guardar.
+- Quitar el formato, o pasar un documento con formato a Markdown, conserva el texto y descarta fuentes, colores y estilos; si hay algo que perder se pide confirmación antes.
 - Negrita, cursiva, subrayado y tachado aplicados a la selección; los cambios sobreviven al cierre y a la recuperación de sesión.
 - Un documento RTF se muestra como una página (texto oscuro sobre blanco) también con el tema oscuro, y conserva las fuentes, tamaños y colores que traiga el archivo: abrirlo no lo modifica.
-- Archivo → Imprimir (`Ctrl+P`) abre la vista previa de impresión para texto, Markdown y RTF en una ventana propia que se cierra sola al imprimir o cancelar. La impresión RTF conserva el texto y los cuatro estilos anteriores; fuentes, colores y otros elementos RTF complejos no se reproducen.
+- Archivo → Imprimir (`Ctrl+P`) abre el diálogo de impresión de Windows, con su vista previa y sus opciones de impresora, papel y orientación, para texto, Markdown y RTF. Los tres se imprimen como texto nativo, sin pasar por el navegador integrado. El texto usa la fuente del editor; Markdown, el estilo y el tamaño de la vista previa. La impresión RTF conserva el texto y los cuatro estilos anteriores; fuentes, colores y otros elementos RTF complejos no se reproducen.
 
 **Editor Markdown**
 
@@ -157,8 +158,8 @@ pwsh tools/New-BrandAssets.ps1
 Declarados para que nada parezca implementado sin estarlo:
 
 - **Tamaño de archivo.** Se pide confirmación por encima de 2 MB y se rechazan los de más de 10 MB. El control de edición (RichEditBox) maqueta el documento completo al abrirlo. Medido en este equipo: 1 MB ASCII ≈ 1 s; 5,6 MB ASCII ≈ 4 s; 1 MB con muchos acentos ≈ 5–9 s; 5,6 MB con muchos acentos ≈ 2,5 min con la ventana sin responder. Una vez abierto, escribir en un archivo de 1 MB es fluido. El resaltado Markdown en el editor se desactiva por encima de 300 000 caracteres.
-- **RTF:** se admiten archivos `.rtf` y los cuatro estilos de carácter de la barra. No hay controles para tablas, imágenes, colores ni formato de párrafo RTF. El zoom, la fuente del editor, la codificación y el salto de línea no se aplican a estos documentos. Un documento RTF no se puede volver a convertir en texto plano.
-- **Imprimir:** el encabezado y el pie (fecha, título, dirección interna de la página y número) los añade la vista previa del navegador integrado; se quitan en «Más opciones → Encabezados y pies de página», y la elección se recuerda.
+- **RTF:** se admiten archivos `.rtf` y los cuatro estilos de carácter de la barra. No hay controles para tablas, imágenes, colores ni formato de párrafo RTF. El zoom, la fuente del editor, la codificación y el salto de línea no se aplican a estos documentos. Al quitar el formato el documento queda sin archivo asociado: se guarda con un nombre nuevo.
+- **Imprimir:** no se añaden encabezado ni pie. La impresión de Markdown tiene su propia maquetación y no es idéntica a la vista previa ni al PDF exportado: el código va sin colores de sintaxis ni fondo, las citas se distinguen por la sangría y el color, y una tabla que cambia de página no repite su cabecera. Las imágenes SVG y las que no se pueden leer se sustituyen por su texto alternativo; las remotas solo se cargan si están permitidas en la configuración.
 - **Caracteres invisibles:** se dibujan en una capa sobre el texto, solo para las líneas visibles. En una línea descomunal (más de 60 000 caracteres a la vista) se marcan solo los primeros.
 - **Sobrescritura:** el cursor no cambia de forma (el control no lo permite); el modo se ve en la barra de estado. Pegar siempre inserta.
 - **Front matter:** se lee como pares `clave: valor` de primer nivel para mostrarlo; no es un intérprete YAML completo. Si el bloque no tiene esa forma se muestra tal cual.

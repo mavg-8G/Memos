@@ -1,3 +1,5 @@
+using Memos.Core.Helpers;
+using Memos.Core.Markdown;
 using Memos.Core.Models;
 
 namespace Memos.Core.Services;
@@ -48,9 +50,16 @@ public interface IPdfExporter
 {
     /// <summary>Prints an HTML document to a PDF file. Relative resources resolve against <paramref name="baseDirectory"/>.</summary>
     Task ExportAsync(string html, string? baseDirectory, string outputPath);
+}
 
-    /// <summary>Opens an interactive print preview for the supplied page.</summary>
-    Task PrintAsync(string html, string? baseDirectory, string title);
+/// <summary>Printing through the print dialog of Windows. Both calls return once the dialog is showing.</summary>
+public interface IPrintService
+{
+    /// <summary>Prints text with its character styles; paragraphs end with '\n'.</summary>
+    Task PrintTextAsync(string title, IReadOnlyList<RichTextRun> runs, bool monospaced);
+
+    /// <summary>Prints a Markdown document. Relative images resolve against <paramref name="baseDirectory"/>.</summary>
+    Task PrintMarkdownAsync(string title, IReadOnlyList<PrintBlock> blocks, string? baseDirectory);
 }
 
 /// <summary>

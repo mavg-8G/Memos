@@ -30,6 +30,7 @@ public sealed partial class MainWindow : Window
     private readonly ILocalizer _loc;
     private readonly WindowContext _context;
     private DocumentViewModel? _observedDocument;
+    private bool _observedRichText;
     private SettingsPage? _settingsPage;
     private bool _draggingTab;
     private bool _syncingSelection;
@@ -219,6 +220,7 @@ public sealed partial class MainWindow : Window
         }
 
         document.PropertyChanged += OnActiveDocumentPropertyChanged;
+        _observedRichText = document.IsRichText;
         if (!_views.TryGetValue(document, out var active))
         {
             active = new DocumentView(document, ViewModel.Settings, _webViewEnvironment, _loc);
@@ -249,11 +251,38 @@ public sealed partial class MainWindow : Window
 
     private void OnActiveDocumentPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(DocumentViewModel.Kind) && _observedDocument is { } document)
+        {
+            var wasRichText = _observedRichText;
+            _observedRichText = document.IsRichText;
+            if (wasRichText && !document.IsRichText)
+            {
+                ReplaceView(document);
+                return;
+            }
+        }
+
         if (e.PropertyName is nameof(DocumentViewModel.Kind) or nameof(DocumentViewModel.ViewMode)
             or nameof(DocumentViewModel.IsOutlineVisible) or nameof(DocumentViewModel.DisplayName))
         {
             UpdateDocumentChrome();
         }
+    }
+
+    /// <summary>
+    /// A document that stops being rich text gets a new editor. Loading RTF replaces the defaults
+    /// of the control (fonts, the "automatic" colour, paragraph format) and nothing puts back the
+    /// ones a plain-text editor starts with.
+    /// </summary>
+    private void ReplaceView(DocumentViewModel document)
+    {
+        if (_views.Remove(document, out var view))
+        {
+            DocumentHost.Children.Remove(view);
+            view.Close();
+        }
+
+        OnActiveDocumentChanged();
     }
 
     /// <summary>Title, workspace switch and view-mode toggles for the active document.</summary>
@@ -267,8 +296,11 @@ public sealed partial class MainWindow : Window
         Title = $"{document.DisplayName} - Memos";
 
         _syncingSelection = true;
-        WorkspaceSelector.SelectedItem = document.IsRichText ? RichTextWorkspaceItem : document.IsMarkdown ? MarkdownWorkspaceItem : TextWorkspaceItem;
+        WorkspaceSelector.SelectedItem = document.IsMarkdown ? MarkdownWorkspaceItem : TextWorkspaceItem;
         _syncingSelection = false;
+
+        FormattingButton.IsChecked = document.IsRichText;
+        FormattingMenuItem.IsChecked = document.IsRichText;
 
         ViewEditorButton.IsChecked = document.ViewMode == MarkdownViewMode.Editor;
         ViewSplitButton.IsChecked = document.ViewMode == MarkdownViewMode.Split;
@@ -468,15 +500,24 @@ public sealed partial class MainWindow : Window
 
     // ---- Toolbar handlers -----------------------------------------------------------------------------
 
-    private void OnWorkspaceSelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
+    private async void OnWorkspaceSelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
     {
         if (!_syncingSelection)
         {
-            var kind = ReferenceEquals(sender.SelectedItem, RichTextWorkspaceItem) ? DocumentKind.RichText
-                : ReferenceEquals(sender.SelectedItem, MarkdownWorkspaceItem) ? DocumentKind.Markdown : DocumentKind.Text;
-            ViewModel.SetKindCommand.Execute(kind);
+            var kind = ReferenceEquals(sender.SelectedItem, MarkdownWorkspaceItem) ? DocumentKind.Markdown : DocumentKind.Text;
+            await ViewModel.SetKindCommand.ExecuteAsync(kind);
+
+            // Leaving rich text can be cancelled; the switch then goes back to where it was.
             UpdateDocumentChrome();
         }
+    }
+
+    private async void OnFormattingClick(object sender, RoutedEventArgs e)
+    {
+        await ViewModel.ToggleFormattingCommand.ExecuteAsync(null);
+
+        // The toggle flips on its own when clicked; it has to show what the document really is.
+        UpdateDocumentChrome();
     }
 
     private void OnViewModeClick(object sender, RoutedEventArgs e)

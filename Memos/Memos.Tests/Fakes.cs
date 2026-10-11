@@ -123,20 +123,45 @@ public sealed class FakePdfExporter : IPdfExporter
         OutputPath = outputPath;
         return Task.CompletedTask;
     }
+}
 
-    public string? PrintTitle { get; private set; }
+public sealed class FakePrintService : IPrintService
+{
+    public string? Title { get; private set; }
 
-    public Exception? PrintError { get; set; }
+    public IReadOnlyList<Memos.Core.Helpers.RichTextRun>? Runs { get; private set; }
 
-    public Task PrintAsync(string html, string? baseDirectory, string title)
+    public bool Monospaced { get; private set; }
+
+    public IReadOnlyList<PrintBlock>? Blocks { get; private set; }
+
+    public string? BaseDirectory { get; private set; }
+
+    public Exception? Error { get; set; }
+
+    public Task PrintTextAsync(string title, IReadOnlyList<Memos.Core.Helpers.RichTextRun> runs, bool monospaced)
     {
-        if (PrintError is not null)
+        if (Error is not null)
         {
-            return Task.FromException(PrintError);
+            return Task.FromException(Error);
         }
 
-        Html = html;
-        PrintTitle = title;
+        Title = title;
+        Runs = runs;
+        Monospaced = monospaced;
+        return Task.CompletedTask;
+    }
+
+    public Task PrintMarkdownAsync(string title, IReadOnlyList<PrintBlock> blocks, string? baseDirectory)
+    {
+        if (Error is not null)
+        {
+            return Task.FromException(Error);
+        }
+
+        Title = title;
+        Blocks = blocks;
+        BaseDirectory = baseDirectory;
         return Task.CompletedTask;
     }
 }
@@ -242,7 +267,7 @@ public sealed class TestApp : IDisposable
         Session = new SessionService(paths);
         Recent = new RecentFilesService(paths);
         ErrorLog = new ErrorLog(paths);
-        Main = new MainViewModel(SettingsService, Files, Recent, Session, Dialogs, Pickers, Clipboard, Pdf,
+        Main = new MainViewModel(SettingsService, Files, Recent, Session, Dialogs, Pickers, Clipboard, Pdf, Print,
             new SearchService(), new MarkdownService(), new FakeLocalizer(), ErrorLog);
     }
 
@@ -269,6 +294,8 @@ public sealed class TestApp : IDisposable
     public FakeClipboard Clipboard { get; } = new();
 
     public FakePdfExporter Pdf { get; } = new();
+
+    public FakePrintService Print { get; } = new();
 
     public MainViewModel Main { get; }
 

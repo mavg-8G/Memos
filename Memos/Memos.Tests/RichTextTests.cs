@@ -1,5 +1,6 @@
 using System.Text;
 using Memos.Core.Helpers;
+using Memos.Core.Markdown;
 using Memos.Core.Models;
 using Memos.Core.Services;
 using Memos.Core.ViewModels;
@@ -18,8 +19,6 @@ public class RichTextTests
         "}\r\n";
 
     private static string Rtf(string body) => @"{\rtf1\ansi " + body + "}";
-
-    private static string Body(string html) => html.Split("<body>")[1].Split("</body>")[0];
 
     // ---- Plain text to RTF ----------------------------------------------------------------------
 
@@ -204,7 +203,6 @@ public class RichTextTests
         for (var length = 0; length <= sample.Length; length++)
         {
             _ = RichTextCodec.Parse(sample[..length]);
-            _ = RichTextPrintHtml.BuildPage("t", sample[..length]);
         }
 
         Assert.Equal("a", RichTextCodec.ToPlainText(@"{\rtf1 a}}}}{{{"));
@@ -218,54 +216,6 @@ public class RichTextTests
         Assert.Same(ascii, RichTextCodec.EscapeNonLatin(ascii));
         Assert.Equal("{\\rtf1 \u00e9 \\u8364? \\u-10179?\\u-9139?}", RichTextCodec.EscapeNonLatin("{\\rtf1 \u00e9 € 👍}"));
         Assert.Equal("é € 👍", RichTextCodec.ToPlainText(RichTextCodec.EscapeNonLatin("{\\rtf1\\ansi \u00e9 € 👍}")));
-    }
-
-    // ---- Print page -----------------------------------------------------------------------------
-
-    [Fact]
-    public void Print_renderer_keeps_basic_styles_and_escapes_text()
-    {
-        var html = RichTextPrintHtml.BuildPage("Note", @"{\rtf1\ansi{\fonttbl{\f0 Segoe UI;}}plain \b bold\b0  \i italic\i0  \ul under\ulnone  \strike strike\strike0  <tag>\par next}");
-        Assert.Contains("<strong>bold</strong>", html);
-        Assert.Contains("<em>italic</em>", html);
-        Assert.Contains("<u>under</u>", html);
-        Assert.Contains("<s>strike</s>", html);
-        Assert.Contains("&lt;tag&gt;", html);
-        Assert.DoesNotContain("Segoe UI;", html.Split("<body>")[1]);
-        Assert.Contains("&lt;", RichTextPrintHtml.BuildPage("Unsafe", @"{\rtf1\u60?}").Split("<body>")[1]);
-    }
-
-    [Fact]
-    public void Print_page_nests_combined_styles_and_breaks_lines()
-    {
-        var html = RichTextPrintHtml.BuildPage("n", Rtf(@"\b\i\ul\strike todo\plain\par segunda\line tercera"));
-        Assert.Equal("<strong><em><u><s>todo</s></u></em></strong><br>segunda<br>tercera", Body(html));
-    }
-
-    [Fact]
-    public void Print_page_cannot_be_broken_by_the_document_or_its_name()
-    {
-        var html = RichTextPrintHtml.BuildPage("<script>alert(1)</script> & co", Rtf(@"\'3cscript\'3e \u60?b\u62? a & b \{x\} </body>"));
-
-        Assert.Contains("<title>&lt;script&gt;alert(1)&lt;/script&gt; &amp; co</title>", html);
-        Assert.Equal("&lt;script&gt; &lt;b&gt; a &amp; b {x} &lt;/body&gt;", Body(html));
-        Assert.DoesNotContain("<script", html);
-    }
-
-    [Fact]
-    public void Print_page_keeps_accents_emoji_and_typographic_quotes()
-    {
-        var html = RichTextPrintHtml.BuildPage("n", @"{\rtf1\ansi\ansicpg1252 Caf\'e9 \'93hola\'94 \u-10179?\u-9139?}");
-        Assert.Equal("Café “hola” 👍", System.Net.WebUtility.HtmlDecode(Body(html)));
-        Assert.DoesNotContain("\ufffd", html);
-        Assert.Contains("charset=\"utf-8\"", html);
-    }
-
-    [Fact]
-    public void Print_page_of_the_editing_controls_output_has_only_the_text()
-    {
-        Assert.Equal("Times grande <strong>negrita</strong><br>Consolas rojo normal<br>", Body(RichTextPrintHtml.BuildPage("n", RichEditSample)));
-        Assert.Equal("", Body(RichTextPrintHtml.BuildPage("n", "no es rtf")));
     }
 
     // ---- Files ----------------------------------------------------------------------------------
@@ -683,25 +633,142 @@ public class RichTextTests
     }
 
     [Fact]
-    public async Task The_workspace_selector_converts_to_rich_text_but_never_back()
+    public async Task Turning_formatting_on_and_off_again_asks_nothing_and_keeps_the_text()
     {
         using var app = new TestApp();
-        var path = app.WriteFile("lista.md", "# título");
+        var path = app.WriteFile("lista.txt", "uno\ndos");
         await app.Main.InitializeAsync([path]);
 
-        app.Main.SetKindCommand.Execute(DocumentKind.RichText);
+        await app.Main.ToggleFormattingCommand.ExecuteAsync(null);
 
         Assert.True(app.Active.IsRichText);
         Assert.Null(app.Active.FilePath);
         Assert.Equal("lista", app.Active.DisplayName);
         Assert.True(app.Active.IsModified);
-        Assert.Equal("# título", app.Active.Text);
+        Assert.Equal("uno\ndos", app.Active.Text);
 
-        // Going back would throw the formatting away, so it is not offered.
-        app.Main.SetKindCommand.Execute(DocumentKind.Text);
-        app.Main.SetKindCommand.Execute(DocumentKind.Markdown);
+        // The control rewrites the RTF its own way; that alone is not formatting.
+        _ = new FakeRichEditor(app.Active);
+        Assert.False(app.Active.HasRichFormatting);
+
+        await app.Main.ToggleFormattingCommand.ExecuteAsync(null);
+
+        Assert.Empty(app.Dialogs.Confirmations);
+        Assert.Equal(DocumentKind.Text, app.Active.Kind);
+        Assert.False(app.Main.IsRichTextActive);
+        Assert.Equal("uno\ndos", app.Active.Text);
+        Assert.Equal("", app.Active.RichText);
+        Assert.Equal("lista", app.Active.DisplayName);
+        Assert.Null(app.Active.FilePath);
+        Assert.True(app.Active.IsModified);
+        Assert.False(app.Active.CanUndo);
+        Assert.Equal("uno\ndos", File.ReadAllText(path));
+    }
+
+    [Theory]
+    [InlineData(DocumentKind.Text)]
+    [InlineData(DocumentKind.Markdown)]
+    public async Task Leaving_rich_text_asks_before_dropping_the_formatting(DocumentKind target)
+    {
+        using var app = new TestApp();
+        var path = WriteRtf(app, "carta.v2.rtf", Rtf(@"hola \b mundo"));
+        await app.Main.InitializeAsync([path]);
+        _ = new FakeRichEditor(app.Active);
+        var original = File.ReadAllBytes(path);
+        Assert.True(app.Active.HasRichFormatting);
+
+        app.Dialogs.ConfirmAnswer = false;
+        await app.Main.SetKindCommand.ExecuteAsync(target);
+
+        Assert.Equal(["Msg_DropFormatting"], app.Dialogs.Confirmations);
         Assert.True(app.Active.IsRichText);
-        Assert.Equal("# título", File.ReadAllText(path));
+        Assert.Equal(path, app.Active.FilePath);
+        Assert.False(app.Active.IsModified);
+
+        app.Dialogs.ConfirmAnswer = true;
+        await app.Main.SetKindCommand.ExecuteAsync(target);
+
+        Assert.Equal(target, app.Active.Kind);
+        Assert.Equal(target == DocumentKind.Markdown, app.Main.IsMarkdownActive);
+        Assert.False(app.Main.IsRichTextActive);
+        Assert.Equal("hola mundo", app.Active.Text);
+        Assert.Null(app.Active.FilePath);
+        Assert.Equal("carta.v2", app.Active.DisplayName);
+        Assert.True(app.Active.IsModified);
+        Assert.Equal(original, File.ReadAllBytes(path));
+
+        // It is an ordinary text document again: it edits, undoes and saves as one.
+        app.Active.Editor = null;
+        app.Type("¡");
+        Assert.Equal("¡hola mundo", app.Active.Text);
+        Assert.True(app.Active.CanUndo);
+        var saved = app.Temp.File(target == DocumentKind.Markdown ? "carta.md" : "carta.txt");
+        app.Pickers.SaveAnswer = saved;
+        await app.Main.SaveCommand.ExecuteAsync(null);
+        Assert.Equal("¡hola mundo", File.ReadAllText(saved));
+        Assert.False(app.Active.IsModified);
+        Assert.Equal(target, app.Active.Kind);
+    }
+
+    [Fact]
+    public async Task A_blank_rich_document_goes_back_to_text_untouched()
+    {
+        using var app = new TestApp();
+        await app.Main.InitializeAsync([]);
+        app.Main.NewRichTextCommand.Execute(null);
+        _ = new FakeRichEditor(app.Active);
+
+        await app.Main.ToggleFormattingCommand.ExecuteAsync(null);
+
+        Assert.Empty(app.Dialogs.Confirmations);
+        Assert.Equal(DocumentKind.Text, app.Active.Kind);
+        Assert.True(app.Active.IsPristine);
+    }
+
+    [Fact]
+    public async Task The_formatting_switch_belongs_to_the_text_workspace()
+    {
+        using var app = new TestApp();
+        await app.Main.InitializeAsync([]);
+        Assert.True(app.Main.ToggleFormattingCommand.CanExecute(null));
+
+        app.Main.NewMarkdownCommand.Execute(null);
+        Assert.False(app.Main.ToggleFormattingCommand.CanExecute(null));
+
+        app.Main.NewRichTextCommand.Execute(null);
+        Assert.True(app.Main.ToggleFormattingCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task A_converted_document_is_restored_by_the_session_in_its_new_format()
+    {
+        using var temp = new TempDirectory();
+        using (var first = new TestApp(temp))
+        {
+            first.Settings.RestoreSession = true;
+            await first.Main.InitializeAsync([]);
+            first.Main.NewRichTextCommand.Execute(null);
+            new FakeRichEditor(first.Active).Edit(Rtf(@"\b nota"));
+            await first.Main.SaveSessionAsync();
+
+            first.Dialogs.ConfirmAnswer = true;
+            await first.Main.SetKindCommand.ExecuteAsync(DocumentKind.Text);
+            first.Active.Editor = null;
+            first.Main.NewTextCommand.Execute(null);
+            first.Type("apunte");
+            await first.Main.SaveSessionAsync();
+            await first.Main.SetKindCommand.ExecuteAsync(DocumentKind.RichText);
+
+            Assert.True(await first.Main.PrepareToCloseAsync());
+            await first.SettingsService.FlushAsync();
+        }
+
+        using var second = new TestApp(temp);
+        await second.Main.InitializeAsync([]);
+
+        var restored = second.Main.Documents.Where(d => !d.IsPristine).ToList();
+        Assert.Equal([DocumentKind.Text, DocumentKind.RichText], restored.Select(d => d.Kind));
+        Assert.Equal(["nota", "apunte"], restored.Select(d => d.Text));
     }
 
     [Fact]
@@ -790,32 +857,35 @@ public class RichTextTests
     // ---- Printing -------------------------------------------------------------------------------
 
     [Fact]
-    public async Task Printing_plain_text_sends_an_escaped_monospaced_page()
+    public async Task Printing_plain_text_sends_the_text_itself_in_the_editor_font()
     {
         using var app = new TestApp();
         await app.Main.InitializeAsync([app.WriteFile("código.txt", "if (a < b && c > d) {\n\t\"x\"\n}")]);
 
         await app.Main.PrintCommand.ExecuteAsync(null);
 
-        Assert.Equal("código.txt", app.Pdf.PrintTitle);
-        Assert.Contains("<pre>if (a &lt; b &amp;&amp; c &gt; d) {\n\t&quot;x&quot;\n}</pre>", app.Pdf.Html);
-        Assert.Contains("<title>c&#243;digo.txt</title>", app.Pdf.Html);
-        Assert.Contains("monospace", app.Pdf.Html);
+        Assert.Equal("código.txt", app.Print.Title);
+        Assert.Equal([new RichTextRun("if (a < b && c > d) {\n\t\"x\"\n}")], app.Print.Runs);
+        Assert.True(app.Print.Monospaced);
+        Assert.Null(app.Print.Blocks);
         Assert.Empty(app.Dialogs.Messages);
     }
 
     [Fact]
-    public async Task Printing_markdown_sends_the_rendered_document_in_light_colours()
+    public async Task Printing_markdown_sends_its_blocks_and_not_its_syntax()
     {
         using var app = new TestApp();
-        await app.Main.InitializeAsync([app.WriteFile("doc.md", "# Título\n\ntexto **fuerte**")]);
+        var path = app.WriteFile("doc.md", "# Título\n\ntexto **fuerte**");
+        await app.Main.InitializeAsync([path]);
 
         await app.Main.PrintCommand.ExecuteAsync(null);
 
-        Assert.Contains("<h1", app.Pdf.Html);
-        Assert.Contains("<strong>fuerte</strong>", app.Pdf.Html);
-        Assert.Contains("color-scheme:light;", app.Pdf.Html);
-        Assert.DoesNotContain("**", Body(app.Pdf.Html!));
+        Assert.Equal("doc.md", app.Print.Title);
+        Assert.Equal(Path.GetDirectoryName(path), app.Print.BaseDirectory);
+        Assert.Equal([PrintBlockKind.Heading, PrintBlockKind.Paragraph], app.Print.Blocks!.Select(b => b.Kind));
+        Assert.Equal([new PrintSpan("Título")], app.Print.Blocks[0].Spans);
+        Assert.Equal([new PrintSpan("texto "), new PrintSpan("fuerte", Bold: true)], app.Print.Blocks[1].Spans);
+        Assert.Null(app.Print.Runs);
     }
 
     [Fact]
@@ -826,9 +896,11 @@ public class RichTextTests
 
         await app.Main.PrintCommand.ExecuteAsync(null);
 
-        Assert.Equal("carta.rtf", app.Pdf.PrintTitle);
-        Assert.Equal("Times grande <strong>negrita</strong><br>Consolas rojo normal<br>", Body(app.Pdf.Html!));
-        Assert.DoesNotContain(@"\rtf", app.Pdf.Html);
+        Assert.Equal("carta.rtf", app.Print.Title);
+        Assert.False(app.Print.Monospaced);
+        Assert.Equal(
+            [new RichTextRun("Times grande "), new RichTextRun("negrita", Bold: true), new RichTextRun("\nConsolas rojo normal\n")],
+            app.Print.Runs);
     }
 
     [Fact]
@@ -840,7 +912,7 @@ public class RichTextTests
 
         await app.Main.PrintCommand.ExecuteAsync(null);
 
-        Assert.Equal("<u>nuevo</u>", Body(app.Pdf.Html!));
+        Assert.Equal([new RichTextRun("nuevo", Underline: true)], app.Print.Runs);
     }
 
     [Theory]
@@ -853,7 +925,7 @@ public class RichTextTests
         using var app = new TestApp();
         await app.Main.InitializeAsync([]);
         app.Type("x");
-        app.Pdf.PrintError = (Exception)Activator.CreateInstance(error, "sin impresora")!;
+        app.Print.Error = (Exception)Activator.CreateInstance(error, "sin impresora")!;
 
         await app.Main.PrintCommand.ExecuteAsync(null);
 
@@ -874,6 +946,6 @@ public class RichTextTests
 
         // A blank rich document prints as a blank page instead of failing.
         await app.Main.PrintCommand.ExecuteAsync(null);
-        Assert.Equal("", Body(app.Pdf.Html!));
+        Assert.Empty(app.Print.Runs!);
     }
 }
