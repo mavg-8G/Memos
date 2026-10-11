@@ -63,7 +63,7 @@ public sealed partial class SettingsPage : UserControl
         };
 
         var version = Assembly.GetExecutingAssembly().GetName().Version;
-        VersionText.Text = _loc.Format("About_Version", version?.ToString(3) ?? "1.0.0");
+        VersionText.Text = _loc.Format("About_Version", version?.ToString(3) ?? "1.0.2");
     }
 
     public MainViewModel ViewModel { get; }
