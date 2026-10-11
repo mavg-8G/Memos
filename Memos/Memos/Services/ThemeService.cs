@@ -1,10 +1,10 @@
-using System.ComponentModel;
 using Memos.Core.Models;
 using Memos.Core.Services;
 using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
+using System.ComponentModel;
 
 namespace Memos.Services;
 

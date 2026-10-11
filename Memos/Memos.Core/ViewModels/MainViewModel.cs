@@ -1,11 +1,11 @@
-using System.Collections.ObjectModel;
-using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Memos.Core.Helpers;
 using Memos.Core.Markdown;
 using Memos.Core.Models;
 using Memos.Core.Services;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 
 namespace Memos.Core.ViewModels;
 

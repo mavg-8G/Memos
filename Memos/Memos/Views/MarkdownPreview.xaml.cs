@@ -1,6 +1,3 @@
-using System.Globalization;
-using System.Text;
-using System.Text.Json;
 using Memos.Core.Markdown;
 using Memos.Core.Models;
 using Memos.Core.Services;
@@ -10,6 +7,7 @@ using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Web.WebView2.Core;
+using System.Globalization;
 
 namespace Memos.Views;
 
@@ -24,7 +22,7 @@ public sealed partial class MarkdownPreview : UserControl
     private ILocalizer? _localizer;
     private WebView2? _view;
     private CoreWebView2? _core;
-    private List<string> _shownBlocks = [];
+    private IReadOnlyList<MarkdownBlock> _shownBlocks = [];
     private string? _pageKey;
     private string? _mappedDirectory;
     private bool _directoryMapped;
@@ -166,11 +164,11 @@ public sealed partial class MarkdownPreview : UserControl
             _shownBlocks = [];
         }
 
-        var blocks = analysis?.Blocks.Select(HtmlDocumentBuilder.WrapBlock).ToList() ?? [];
-        var script = BuildPatchScript(_shownBlocks, blocks);
-        if (script is not null)
+        // Only what differs from the blocks on screen is sent to the page.
+        var blocks = analysis?.Blocks ?? [];
+        if (PreviewPatch.Create(_shownBlocks, blocks) is { } patch)
         {
-            await core.ExecuteScriptAsync(script);
+            await core.ExecuteScriptAsync(patch.ToScript());
         }
 
         _shownBlocks = blocks;
@@ -203,45 +201,6 @@ public sealed partial class MarkdownPreview : UserControl
             _loadingPage = false;
             core.NavigationCompleted -= OnCompleted;
         }
-    }
-
-    /// <summary>
-    /// Script that turns the blocks on screen into the new ones by replacing only the middle part
-    /// that differs. Returns null when nothing changed.
-    /// </summary>
-    private static string? BuildPatchScript(List<string> oldBlocks, List<string> newBlocks)
-    {
-        var common = Math.Min(oldBlocks.Count, newBlocks.Count);
-        var prefix = 0;
-        while (prefix < common && oldBlocks[prefix] == newBlocks[prefix])
-        {
-            prefix++;
-        }
-
-        var suffix = 0;
-        while (suffix < common - prefix && oldBlocks[^(suffix + 1)] == newBlocks[^(suffix + 1)])
-        {
-            suffix++;
-        }
-
-        var remove = oldBlocks.Count - prefix - suffix;
-        var insertCount = newBlocks.Count - prefix - suffix;
-        if (remove == 0 && insertCount == 0)
-        {
-            return null;
-        }
-
-        var html = new StringBuilder();
-        for (var i = prefix; i < prefix + insertCount; i++)
-        {
-            html.Append(newBlocks[i]);
-        }
-
-        return "(function(s,r,h){var c=document.getElementById('content');" +
-               "for(var i=0;i<r;i++){c.removeChild(c.children[s]);}" +
-               "var t=document.createElement('template');t.innerHTML=h;c.insertBefore(t.content,c.children[s]||null);})(" +
-               prefix.ToString(CultureInfo.InvariantCulture) + "," + remove.ToString(CultureInfo.InvariantCulture) + "," +
-               JsonSerializer.Serialize(html.ToString()) + ");";
     }
 
     private void OnNavigationStarting(CoreWebView2 sender, CoreWebView2NavigationStartingEventArgs e)

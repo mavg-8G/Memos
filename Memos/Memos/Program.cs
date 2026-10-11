@@ -1,8 +1,8 @@
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.Windows.AppLifecycle;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Windows.ApplicationModel.Activation;
 using Windows.Storage;
 

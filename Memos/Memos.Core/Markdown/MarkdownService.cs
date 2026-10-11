@@ -1,5 +1,3 @@
-using System.Text;
-using ColorCode;
 using Markdig;
 using Markdig.Extensions.AutoIdentifiers;
 using Markdig.Extensions.TaskLists;
@@ -8,6 +6,9 @@ using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using System.Buffers;
+using System.Globalization;
+using System.Text;
 
 namespace Memos.Core.Markdown;
 
@@ -60,10 +61,13 @@ public sealed class MarkdownService : IMarkdownService
 
         var painter = options.IncludeSyntaxRuns ? new SyntaxPainter(text.Length) : null;
         var headings = new List<HeadingInfo>();
-        Visit(document, painter, headings, text);
-        cancellationToken.ThrowIfCancellationRequested();
+        foreach (var block in document)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Visit(block, painter, headings, text);
+        }
 
-        var writer = new StringWriter(new StringBuilder(1024));
+        using var writer = new BlockWriter();
         var renderer = new HtmlRenderer(writer);
         Pipeline.Setup(renderer);
         if (options.RelativeUrlBase is { } baseUrl)
@@ -81,7 +85,6 @@ public sealed class MarkdownService : IMarkdownService
         }
 
         var blocks = new List<MarkdownBlock>(document.Count);
-        var builder = writer.GetStringBuilder();
         FrontMatter? frontMatter = null;
         foreach (var block in document)
         {
@@ -98,17 +101,25 @@ public sealed class MarkdownService : IMarkdownService
                 continue;
             }
 
-            builder.Clear();
             renderer.Write(block);
-            writer.Flush();
-            if (builder.Length > 0)
+            if (writer.Length > 0)
             {
-                blocks.Add(new MarkdownBlock(builder.ToString(), block.Line));
+                blocks.Add(new MarkdownBlock(writer.TakeString(), block.Line));
             }
         }
 
         return new MarkdownAnalysis(blocks, headings, painter?.ToRuns() ?? [], frontMatter);
     }
+
+    /// <summary>
+    /// Pays the one-time costs of the first analysis (compiling the parser, the renderer and the
+    /// highlighter) ahead of time, so the first document opens as fast as the following ones.
+    /// </summary>
+    public static void WarmUp() =>
+        new MarkdownService().Analyze(
+            "---\ntitle: t\n---\n# T\n\nA **b** *c* ~~d~~ `e` [f](g) https://example.com h[^1]\n\n> q\n\n- [x] i\n\n1. j\n\n" +
+            "| k | l |\n|---|--:|\n| 1 | 2 |\n\n```csharp\nvar m = \"n\"; // o\n```\n\n[^1]: p\n",
+            new MarkdownRenderOptions(IncludeSyntaxRuns: true));
 
     /// <summary>
     /// Only ordinary web, mail and relative links are kept. Anything that could run code when clicked
@@ -226,9 +237,9 @@ public sealed class MarkdownService : IMarkdownService
         switch (node)
         {
             case ContainerBlock container:
-                foreach (var child in container)
+                for (var i = 0; i < container.Count; i++)
                 {
-                    Visit(child, painter, headings, text);
+                    Visit(container[i], painter, headings, text);
                 }
 
                 break;
@@ -236,10 +247,12 @@ public sealed class MarkdownService : IMarkdownService
                 Visit(inline, painter, headings, text);
                 break;
             case ContainerInline containerInline:
-                // Copy first: an unsafe autolink replaces itself while we iterate.
-                foreach (var child in containerInline.ToList())
+                // The next sibling is read first: an unsafe autolink replaces itself while we iterate.
+                for (var child = containerInline.FirstChild; child is not null;)
                 {
+                    var next = child.NextSibling;
                     Visit(child, painter, headings, text);
+                    child = next;
                 }
 
                 break;
@@ -278,9 +291,9 @@ public sealed class MarkdownService : IMarkdownService
     {
         protected override void Write(HtmlRenderer renderer, CodeBlock obj)
         {
-            if (obj is FencedCodeBlock { Info: { Length: > 0 } info } && FindLanguage(info) is { } language)
+            if (obj is FencedCodeBlock { Info: { Length: > 0 } info } && CodeHighlighter.FindLanguage(info) is { } language)
             {
-                var html = new HtmlClassFormatter().GetHtmlString(obj.Lines.ToString(), language);
+                var html = CodeHighlighter.Highlight(language, obj.Lines.ToString());
                 renderer.EnsureLine();
                 renderer.Write("<div class=\"code\">").Write(html).Write("</div>");
                 renderer.EnsureLine();
@@ -289,32 +302,70 @@ public sealed class MarkdownService : IMarkdownService
 
             fallback.Write(renderer, obj);
         }
+    }
 
-        private static ILanguage? FindLanguage(string info)
+    /// <summary>
+    /// Receives the HTML of one block at a time. The buffer is reused from block to block, so the
+    /// only memory a render leaves behind is the string of each block.
+    /// </summary>
+    private sealed class BlockWriter() : TextWriter(CultureInfo.InvariantCulture)
+    {
+        private char[] _buffer = ArrayPool<char>.Shared.Rent(4096);
+
+        public int Length { get; private set; }
+
+        public override Encoding Encoding => Encoding.Unicode;
+
+        /// <summary>Returns what was written since the last call and starts over.</summary>
+        public string TakeString()
         {
-            var id = info.Trim().ToLowerInvariant() switch
-            {
-                "cs" or "csharp" => "c#",
-                "js" or "jsx" or "node" => "javascript",
-                "ts" or "tsx" => "typescript",
-                "py" => "python",
-                "ps1" or "pwsh" => "powershell",
-                "c++" or "cc" or "h" or "hpp" or "c" => "cpp",
-                "htm" => "html",
-                "xaml" or "svg" => "xml",
-                "fs" => "f#",
-                "vb" => "vb.net",
-                var other => other,
-            };
+            var result = new string(_buffer, 0, Length);
+            Length = 0;
+            return result;
+        }
 
-            try
+        public override void Write(char value)
+        {
+            if (Length == _buffer.Length)
             {
-                return Languages.FindById(id);
+                Grow(1);
             }
-            catch (Exception)
+
+            _buffer[Length++] = value;
+        }
+
+        public override void Write(ReadOnlySpan<char> buffer)
+        {
+            if (buffer.Length > _buffer.Length - Length)
             {
-                return null;
+                Grow(buffer.Length);
             }
+
+            buffer.CopyTo(_buffer.AsSpan(Length));
+            Length += buffer.Length;
+        }
+
+        public override void Write(string? value) => Write(value.AsSpan());
+
+        public override void Write(char[] buffer, int index, int count) => Write(buffer.AsSpan(index, count));
+
+        protected override void Dispose(bool disposing)
+        {
+            if (_buffer.Length > 0)
+            {
+                ArrayPool<char>.Shared.Return(_buffer);
+                _buffer = [];
+            }
+
+            base.Dispose(disposing);
+        }
+
+        private void Grow(int needed)
+        {
+            var larger = ArrayPool<char>.Shared.Rent(Math.Max(_buffer.Length * 2, Length + needed));
+            _buffer.AsSpan(0, Length).CopyTo(larger);
+            ArrayPool<char>.Shared.Return(_buffer);
+            _buffer = larger;
         }
     }
 }

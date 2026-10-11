@@ -60,6 +60,10 @@ public partial class App : Application
         Program.FilesReceived += paths => _window.DispatcherQueue.TryEnqueue(() => _window.OpenFromAnotherInstance(paths));
         _window.Activate();
         await _window.ViewModel.InitializeAsync(_startupPaths);
+
+        // The first Markdown analysis of a session is many times slower than the rest. It is paid
+        // here, in the background, instead of when the first document or preview is opened.
+        _ = Task.Run(MarkdownService.WarmUp);
     }
 
     private static ServiceProvider ConfigureServices()

@@ -37,6 +37,7 @@ public partial class DocumentViewModel : ObservableObject, IDisposable
     private readonly Debouncer _statsDebouncer = new();
     private LineIndex? _lineIndex;
     private TextChange? _pendingChange;
+    private TimeSpan? _lastAnalysisTime;
     private bool _navigatingHistory;
     private bool _applyingCommand;
     private bool _metadataModified;
@@ -57,8 +58,13 @@ public partial class DocumentViewModel : ObservableObject, IDisposable
         Find = new FindReplaceViewModel(this, services.Search, services.Localizer);
     }
 
-    /// <summary>Quiet time before Markdown is re-analysed after an edit.</summary>
-    public static TimeSpan AnalysisDelay { get; set; } = TimeSpan.FromMilliseconds(180);
+    /// <summary>
+    /// Quiet time before Markdown is re-analysed after an edit, when the analysis is instant.
+    /// Documents that take longer to analyse wait proportionally longer, up to <see cref="MaxAnalysisDelay"/>.
+    /// </summary>
+    public static TimeSpan AnalysisDelay { get; set; } = TimeSpan.FromMilliseconds(60);
+
+    public static TimeSpan MaxAnalysisDelay { get; set; } = TimeSpan.FromMilliseconds(600);
 
     public Guid Id { get; init; } = Guid.NewGuid();
 
@@ -528,6 +534,26 @@ public partial class DocumentViewModel : ObservableObject, IDisposable
         return _analysisDebouncer.Pending;
     }
 
+    /// <summary>
+    /// The heading as the latest analysis sees it. The outline keeps its entries while their titles
+    /// do not change, so the line stored in one of them may predate edits made above it.
+    /// </summary>
+    public HeadingInfo CurrentHeading(HeadingInfo shown)
+    {
+        if (Analysis is { } analysis && analysis.Headings.Count == Headings.Count)
+        {
+            for (var i = 0; i < Headings.Count; i++)
+            {
+                if (ReferenceEquals(Headings[i], shown))
+                {
+                    return analysis.Headings[i];
+                }
+            }
+        }
+
+        return shown;
+    }
+
     /// <summary>Completes when the analysis scheduled by the latest edit is done.</summary>
     public Task PendingAnalysis => _analysisDebouncer.Pending;
 
@@ -625,7 +651,7 @@ public partial class DocumentViewModel : ObservableObject, IDisposable
         ScheduleStatistics();
         if (IsMarkdown)
         {
-            _analysisDebouncer.Run(newText.Length > 200_000 ? TimeSpan.FromMilliseconds(600) : AnalysisDelay, RunAnalysisAsync);
+            _analysisDebouncer.Run(GetAnalysisDelay(newText.Length), RunAnalysisAsync);
         }
 
         Find.OnDocumentTextChanged();
@@ -769,6 +795,41 @@ public partial class DocumentViewModel : ObservableObject, IDisposable
         ReadingMinutes = stats.ReadingMinutes;
     }
 
+    /// <summary>
+    /// The preview should follow the typing closely, but an analysis that is replaced by the next
+    /// keystroke is wasted work: the slower the last one was, the longer the pause that is awaited.
+    /// </summary>
+    internal TimeSpan GetAnalysisDelay(int textLength)
+    {
+        if (_lastAnalysisTime is not { } last)
+        {
+            // Nothing measured yet: assume a big document is a slow one.
+            return textLength > 200_000 && MaxAnalysisDelay > AnalysisDelay ? MaxAnalysisDelay : AnalysisDelay;
+        }
+
+        var delay = AnalysisDelay + last * 4;
+        return delay > MaxAnalysisDelay && MaxAnalysisDelay > AnalysisDelay ? MaxAnalysisDelay : delay;
+    }
+
+    /// <summary>The outline shows levels and titles; where each heading sits is not part of it.</summary>
+    private static bool SameOutline(IReadOnlyList<HeadingInfo> shown, IReadOnlyList<HeadingInfo> current)
+    {
+        if (shown.Count != current.Count)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < shown.Count; i++)
+        {
+            if (shown[i].Level != current[i].Level || !string.Equals(shown[i].Text, current[i].Text, StringComparison.Ordinal))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private async Task RunAnalysisAsync(CancellationToken token)
     {
         var text = Text;
@@ -778,7 +839,13 @@ public partial class DocumentViewModel : ObservableObject, IDisposable
             PreviewResourceBase,
             IncludeSyntaxRuns: Settings.MarkdownSyntaxHighlighting && text.Length <= FileLimits.MaxHighlightChars);
 
-        var analysis = await Task.Run(() => _services.Markdown.Analyze(text, options, token), token);
+        var (analysis, elapsed) = await Task.Run(() =>
+        {
+            var started = System.Diagnostics.Stopwatch.GetTimestamp();
+            var result = _services.Markdown.Analyze(text, options, token);
+            return (result, System.Diagnostics.Stopwatch.GetElapsedTime(started));
+        }, token);
+        _lastAnalysisTime = elapsed;
         if (token.IsCancellationRequested || version != TextVersion || !IsMarkdown)
         {
             return;
@@ -788,7 +855,13 @@ public partial class DocumentViewModel : ObservableObject, IDisposable
         var change = _pendingChange;
         _pendingChange = null;
         Analysis = analysis;
-        Headings = analysis.Headings;
+
+        // Replacing the list rebuilds the outline on screen, so it is kept while it reads the same;
+        // CurrentHeading gives the up-to-date position of the entries that stay.
+        if (!SameOutline(Headings, analysis.Headings))
+        {
+            Headings = analysis.Headings;
+        }
 
         (int, int)? dirty = previous is not null && change is { } c
             ? HighlightPlanner.GetDirtyRange(previous.Runs, analysis.Runs, c, text.Length)

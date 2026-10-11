@@ -1,5 +1,3 @@
-using System.ComponentModel;
-using System.Globalization;
 using Memos.Core.Markdown;
 using Memos.Core.Models;
 using Memos.Core.Services;
@@ -12,10 +10,11 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using System.ComponentModel;
+using System.Globalization;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Foundation;
 using Windows.System;
-using Windows.UI;
 using Windows.UI.Core;
 
 namespace Memos.Views;

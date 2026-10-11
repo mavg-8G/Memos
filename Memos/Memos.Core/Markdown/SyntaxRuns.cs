@@ -54,15 +54,14 @@ internal sealed class SyntaxPainter(int length)
     public List<SyntaxRun> ToRuns()
     {
         var runs = new List<SyntaxRun>();
+        ReadOnlySpan<byte> styles = _styles;
         var i = 0;
-        while (i < _styles.Length)
+        while (i < styles.Length)
         {
-            var style = _styles[i];
-            var start = i++;
-            while (i < _styles.Length && _styles[i] == style)
-            {
-                i++;
-            }
+            var style = styles[i];
+            var start = i;
+            var same = styles[i..].IndexOfAnyExcept(style);
+            i = same < 0 ? styles.Length : i + same;
 
             if (style != 0)
             {

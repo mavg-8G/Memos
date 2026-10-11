@@ -1,5 +1,3 @@
-using System.Collections.Specialized;
-using System.ComponentModel;
 using Memos.Core.Models;
 using Memos.Core.Services;
 using Memos.Core.ViewModels;
@@ -10,6 +8,8 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 using Windows.System;

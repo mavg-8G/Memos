@@ -1,10 +1,10 @@
-using System.Reflection;
 using Memos.Core.Models;
 using Memos.Core.Services;
 using Memos.Core.ViewModels;
 using Memos.Helpers;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using System.Reflection;
 
 namespace Memos.Views;
 

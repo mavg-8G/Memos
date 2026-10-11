@@ -1,8 +1,8 @@
-using System.Globalization;
-using System.Text;
 using ColorCode;
 using ColorCode.Styling;
 using Memos.Core.Models;
+using System.Globalization;
+using System.Text;
 
 namespace Memos.Core.Markdown;
 

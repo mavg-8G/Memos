@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using Memos.Core.Markdown;
 using Memos.Core.Models;
 using Memos.Core.Services;
@@ -8,6 +7,7 @@ using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using System.ComponentModel;
 using Windows.System;
 
 namespace Memos.Views;
@@ -234,10 +234,12 @@ public sealed partial class DocumentView : UserControl
 
     private void OnOutlineItemClick(object sender, ItemClickEventArgs e)
     {
-        if (e.ClickedItem is not HeadingInfo heading)
+        if (e.ClickedItem is not HeadingInfo shown)
         {
             return;
         }
+
+        var heading = Document.CurrentHeading(shown);
 
         Document.GoToLine(heading.Line + 1);
         if (IsEditorVisible)

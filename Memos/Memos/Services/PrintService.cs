@@ -1,4 +1,3 @@
-using System.Text;
 using Memos.Core.Helpers;
 using Memos.Core.Markdown;
 using Memos.Core.Models;
@@ -12,6 +11,7 @@ using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Printing;
+using System.Text;
 using Windows.Foundation;
 using Windows.Graphics.Printing;
 using Windows.UI;
