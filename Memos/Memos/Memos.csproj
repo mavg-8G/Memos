@@ -20,7 +20,7 @@
     <!-- Identity shown by Windows; change these (and Assets\Memos.ico) to rebrand the app. -->
     <AssemblyName>Memos</AssemblyName>
     <Product>Memos</Product>
-    <Version>1.0.0</Version>
+    <Version>1.0.3</Version>
   </PropertyGroup>
 
   <!--

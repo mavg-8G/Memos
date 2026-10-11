@@ -3,7 +3,7 @@
     Generates every icon the app and its MSIX package need from one drawing.
 
 .DESCRIPTION
-    The Memos mark (a sheet of paper with a pencil on a coloured tile) is drawn with vector
+    The Memos mark (a folded document with an M on a coloured tile) is drawn with vector
     primitives, so it stays sharp at every size. Running this script rewrites:
 
       Memos/Memos/Assets/Memos.ico            window, taskbar and executable icon
@@ -19,8 +19,8 @@
     Bottom-right colour of the tile gradient.
 #>
 param(
-    [string]$TileStart = '#3C8CFF',
-    [string]$TileEnd = '#5A3FD8',
+    [string]$TileStart = '#3969D5',
+    [string]$TileEnd = '#254EAE',
     [string]$PreviewPath
 )
 
@@ -66,21 +66,14 @@ function Draw-Mark([System.Drawing.Graphics]$g, [single]$ox, [single]$oy, [singl
         [System.Drawing.PointF]::new(0, 0), [System.Drawing.PointF]::new($s, $s), (ColorOf $TileStart), (ColorOf $TileEnd))
     $g.FillPath($gradient, $tile)
 
-    # Soft light from the top, as on Fluent app icons
-    $g.SetClip($tile)
-    $shine = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
-        [System.Drawing.PointF]::new(0, 0), [System.Drawing.PointF]::new(0, $s * 0.6), (ColorOf '#FFFFFF' 46), (ColorOf '#FFFFFF' 0))
-    $g.FillRectangle($shine, 0, 0, $s, $s * 0.6)
-    $g.ResetClip()
-
-    # Sheet of paper with a folded corner
+    # One broad document silhouette survives at taskbar sizes.
     $simple = $detail -le 24
-    $l = $s * $(if ($simple) { 0.25 } else { 0.235 })
-    $t = $s * 0.17
-    $w = $s * $(if ($simple) { 0.50 } else { 0.47 })
-    $h = $s * 0.66
-    $fold = $s * 0.15
-    $r = $s * 0.045
+    $l = $s * 0.23
+    $t = $s * 0.18
+    $w = $s * 0.54
+    $h = $s * 0.64
+    $fold = $s * 0.14
+    $r = $s * 0.05
     $right = $l + $w
     $bottom = $t + $h
 
@@ -92,53 +85,22 @@ function Draw-Mark([System.Drawing.Graphics]$g, [single]$ox, [single]$oy, [singl
     $page.AddArc($l, $bottom - $r * 2, $r * 2, $r * 2, 90, 90)
     $page.CloseFigure()
 
-    $shadow = $page.Clone()
-    $matrix = [System.Drawing.Drawing2D.Matrix]::new(); $matrix.Translate(0, $s * 0.022); $shadow.Transform($matrix)
-    $g.FillPath([System.Drawing.SolidBrush]::new((ColorOf '#1A1060' 70)), $shadow)
     $g.FillPath([System.Drawing.SolidBrush]::new((ColorOf '#FFFFFF')), $page)
 
     $corner = New-Polygon @(($right - $fold), $t, ($right - $fold), ($t + $fold), $right, ($t + $fold))
-    $g.FillPath([System.Drawing.SolidBrush]::new((ColorOf '#C6D6FF')), $corner)
+    $g.FillPath([System.Drawing.SolidBrush]::new((ColorOf '#BED3FF')), $corner)
 
-    # Lines of text: a heading and body lines
-    $x = $l + $s * 0.075
-    $lines = if ($simple) {
-        @(@(0.43, 0.20, 0.075, '#3D6BF0'), @(0.60, 0.30, 0.065, '#9FB3EA'))
-    } else {
-        @(@(0.415, 0.17, 0.052, '#3D6BF0'), @(0.525, 0.31, 0.036, '#A9BBEE'), @(0.615, 0.25, 0.036, '#A9BBEE'), @(0.705, 0.16, 0.036, '#A9BBEE'))
-    }
-    foreach ($line in $lines) {
-        $thickness = [single]($s * $line[2])
-        $bar = New-RoundedRect $x ($s * $line[0] - $thickness / 2) ($s * $line[1]) $thickness ($thickness / 2.001)
-        $g.FillPath([System.Drawing.SolidBrush]::new((ColorOf $line[3])), $bar)
-    }
-
-    # Pencil, writing on the sheet. Left out at the smallest sizes, where it would only be noise.
-    if (-not $simple) {
-        $inner = $g.Save()
-        $g.TranslateTransform($s * 0.565, $s * 0.795)
-        $g.RotateTransform(45)
-        $u = $s
-        $half = $u * 0.058
-
-        $outline = [System.Drawing.Drawing2D.GraphicsPath]::new()
-        $outline.AddPolygon([System.Drawing.PointF[]]@(
-            [System.Drawing.PointF]::new(0, 0), [System.Drawing.PointF]::new($half, -$u * 0.105),
-            [System.Drawing.PointF]::new($half, -$u * 0.43), [System.Drawing.PointF]::new(-$half, -$u * 0.43),
-            [System.Drawing.PointF]::new(-$half, -$u * 0.105)))
-        $halo = [System.Drawing.Pen]::new((ColorOf '#2A1C8F' 60), $u * 0.035); $halo.LineJoin = 'Round'
-        $g.DrawPath($halo, $outline)
-
-        # Eraser, ferrule, body, wood, lead
-        $g.FillPath([System.Drawing.SolidBrush]::new((ColorOf '#FF8FA3')), (New-RoundedRect (-$half) (-$u * 0.43) ($half * 2) ($u * 0.075) ($u * 0.022)))
-        $g.FillRectangle([System.Drawing.SolidBrush]::new((ColorOf '#D7DCE8')), -$half, -$u * 0.375, $half * 2, $u * 0.04)
-        $body = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
-            [System.Drawing.PointF]::new(-$half, 0), [System.Drawing.PointF]::new($half, 0), (ColorOf '#FFD24A'), (ColorOf '#FFB01F'))
-        $g.FillRectangle($body, -$half, -$u * 0.336, $half * 2, $u * 0.232)
-        $g.FillPath([System.Drawing.SolidBrush]::new((ColorOf '#F6DFBA')), (New-Polygon @((-$half), (-$u * 0.105), $half, (-$u * 0.105), ($half * 0.42), (-$u * 0.044), (-$half * 0.42), (-$u * 0.044))))
-        $g.FillPath([System.Drawing.SolidBrush]::new((ColorOf '#33334D')), (New-Polygon @((-$half * 0.42), (-$u * 0.044), ($half * 0.42), (-$u * 0.044), 0, 0)))
-        $g.Restore($inner)
-    }
+    # The M is the sole interior detail. Use a heavier stroke on tiny variants.
+    $pen = [System.Drawing.Pen]::new((ColorOf '#315CC8'), [single]($s * $(if ($simple) { 0.075 } else { 0.066 })))
+    $pen.LineJoin = 'Round'
+    $pen.StartCap = 'Round'; $pen.EndCap = 'Round'
+    $points = [System.Drawing.PointF[]]@(
+        [System.Drawing.PointF]::new($s * 0.335, $s * 0.655),
+        [System.Drawing.PointF]::new($s * 0.335, $s * 0.42),
+        [System.Drawing.PointF]::new($s * 0.50, $s * 0.59),
+        [System.Drawing.PointF]::new($s * 0.665, $s * 0.42),
+        [System.Drawing.PointF]::new($s * 0.665, $s * 0.655))
+    $g.DrawLines($pen, $points)
 
     $g.Restore($state)
 }
