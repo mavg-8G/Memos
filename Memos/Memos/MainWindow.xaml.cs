@@ -134,6 +134,7 @@ public sealed partial class MainWindow : Window
                 view.Close();
             }
 
+            _webViewEnvironment.Shutdown();
             _closeConfirmed = true;
             Close();
         }

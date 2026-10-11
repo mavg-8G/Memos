@@ -7,6 +7,13 @@
 
     <!-- The WebView2 is created on first use so text-only sessions never start a browser process. -->
     <Grid x:Name="Host" AutomationProperties.Name="{h:Loc Key=Preview_Name}">
+        <!-- Shown while the browser behind the preview starts. -->
+        <ProgressRing x:Name="LoadingRing"
+                      Width="32"
+                      Height="32"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center"
+                      IsActive="False" />
         <InfoBar x:Name="ErrorBar"
                  VerticalAlignment="Top"
                  Margin="12"

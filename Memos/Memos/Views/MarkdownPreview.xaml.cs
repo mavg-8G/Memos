@@ -17,6 +17,8 @@ namespace Memos.Views;
 /// </summary>
 public sealed partial class MarkdownPreview : UserControl
 {
+    private const int StartAttempts = 6;
+
     private WebViewEnvironment? _environment;
     private AppSettings? _settings;
     private ILocalizer? _localizer;
@@ -73,7 +75,9 @@ public sealed partial class MarkdownPreview : UserControl
         catch (Exception ex) when (ex is System.Runtime.InteropServices.COMException or InvalidOperationException or IOException or TimeoutException)
         {
             // Typically the WebView2 runtime is missing. Editing keeps working without a preview.
+            LoadingRing.IsActive = false;
             ErrorBar.IsOpen = true;
+            _environment?.Report(ex);
         }
         finally
         {
@@ -129,7 +133,8 @@ public sealed partial class MarkdownPreview : UserControl
         if (_view is not null)
         {
             Host.Children.Remove(_view);
-            _view.Close();
+            _core!.NavigationStarting -= OnNavigationStarting;
+            _environment!.Release(_view);
             _view = null;
             _core = null;
         }
@@ -140,15 +145,63 @@ public sealed partial class MarkdownPreview : UserControl
 
     private async Task ApplyAsync(MarkdownAnalysis? analysis, string? directory)
     {
-        if (_view is null)
+        var started = System.Diagnostics.Stopwatch.GetTimestamp();
+        var browserTime = TimeSpan.Zero;
+        if (_core is null)
         {
-            _view = new WebView2 { DefaultBackgroundColor = Colors.Transparent };
-            Host.Children.Insert(0, _view);
-            _core = await _environment!.InitializeAsync(_view);
+            // Starting the browser takes from a fraction of a second to, on a busy machine, much
+            // longer: the pane says so instead of staying blank.
+            LoadingRing.IsActive = true;
+            var view = _environment!.TakeSpare();
+            if (view is not null)
+            {
+                // The view another preview left behind is ready at once.
+                Host.Children.Insert(0, view);
+                _core = view.CoreWebView2;
+            }
+            else
+            {
+                // A browser left over from a session that did not end well can make the first
+                // attempts fail while it goes away, so it is tried a few times before giving up.
+                for (var attempt = 1; _core is null; attempt++)
+                {
+                    view = new WebView2 { DefaultBackgroundColor = Colors.Transparent };
+                    Host.Children.Insert(0, view);
+                    try
+                    {
+                        _core = await _environment.InitializeAsync(view);
+                    }
+                    catch (Exception ex) when (ex is System.Runtime.InteropServices.COMException or InvalidOperationException)
+                    {
+                        // A control without a browser behind it is of no use.
+                        Host.Children.Remove(view);
+                        view.Close();
+                        if (attempt == StartAttempts || _closed)
+                        {
+                            LoadingRing.IsActive = false;
+                            throw;
+                        }
+
+                        await Task.Delay(TimeSpan.FromMilliseconds(Math.Min(250 * attempt, 1500)));
+                    }
+                }
+            }
+
+            if (_closed)
+            {
+                Host.Children.Remove(view);
+                _environment.Release(view!);
+                _core = null;
+                LoadingRing.IsActive = false;
+                return;
+            }
+
+            _view = view;
             _core.NavigationStarting += OnNavigationStarting;
+            browserTime = System.Diagnostics.Stopwatch.GetElapsedTime(started);
         }
 
-        var core = _core!;
+        var core = _core;
         if (!_directoryMapped || !string.Equals(directory, _mappedDirectory, StringComparison.OrdinalIgnoreCase))
         {
             WebViewEnvironment.MapDocumentFolder(core, directory);
@@ -159,9 +212,18 @@ public sealed partial class MarkdownPreview : UserControl
         var pageKey = GetPageKey(directory);
         if (pageKey != _pageKey)
         {
-            await LoadShellAsync(core, directory);
+            try
+            {
+                await LoadShellAsync(core, directory);
+            }
+            finally
+            {
+                LoadingRing.IsActive = false;
+            }
+
             _pageKey = pageKey;
             _shownBlocks = [];
+            _environment!.ReportIfSlow(browserTime, System.Diagnostics.Stopwatch.GetElapsedTime(started) - browserTime);
         }
 
         // Only what differs from the blocks on screen is sent to the page.
