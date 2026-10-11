@@ -261,4 +261,12 @@ public sealed class ClipboardService : IClipboardService
         Clipboard.SetContent(package);
         Clipboard.Flush();
     }
+
+    public void SetText(string text)
+    {
+        var package = new DataPackage { RequestedOperation = DataPackageOperation.Copy };
+        package.SetText(text);
+        Clipboard.SetContent(package);
+        Clipboard.Flush();
+    }
 }

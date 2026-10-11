@@ -11,6 +11,7 @@ public enum SyntaxColor : byte
     Link,
     Quote,
     Marker,
+    Meta,
 }
 
 [Flags]

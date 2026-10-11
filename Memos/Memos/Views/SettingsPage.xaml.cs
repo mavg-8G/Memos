@@ -27,6 +27,7 @@ public sealed partial class SettingsPage : UserControl
         BindCombo(LineEndingCombo, [LineEnding.CrLf, LineEnding.Lf, LineEnding.Cr], "LineEnding", () => Settings.DefaultLineEnding, v => Settings.DefaultLineEnding = v);
         BindCombo(ViewModeCombo, [MarkdownViewMode.Editor, MarkdownViewMode.Split, MarkdownViewMode.Preview], "ViewMode", () => Settings.MarkdownViewMode, v => Settings.MarkdownViewMode = v);
         BindCombo(PreviewStyleCombo, [PreviewStyle.Default, PreviewStyle.Serif, PreviewStyle.Compact], "PreviewStyle", () => Settings.PreviewStyle, v => Settings.PreviewStyle = v);
+        BindCombo(SyntaxThemeCombo, [SyntaxTheme.Default, SyntaxTheme.Accent, SyntaxTheme.Monochrome], "SyntaxTheme", () => Settings.SyntaxTheme, v => Settings.SyntaxTheme = v);
         BindCombo(StartupCombo, [DocumentKind.Text, DocumentKind.Markdown], "Startup", () => Settings.StartupDocument, v => Settings.StartupDocument = v);
         BindCombo(LanguageCombo, ["", "es-ES", "en-US"], null, () => Settings.Language, v =>
         {
@@ -52,6 +53,15 @@ public sealed partial class SettingsPage : UserControl
             }
         };
 
+        UpdateErrorLogCard();
+        viewModel.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(MainViewModel.HasErrorLog))
+            {
+                UpdateErrorLogCard();
+            }
+        };
+
         var version = Assembly.GetExecutingAssembly().GetName().Version;
         VersionText.Text = _loc.Format("About_Version", version?.ToString(3) ?? "1.0.0");
     }
@@ -59,6 +69,11 @@ public sealed partial class SettingsPage : UserControl
     public MainViewModel ViewModel { get; }
 
     public AppSettings Settings => ViewModel.Settings;
+
+    /// <summary>Says where the log is when there is one, and that all is well when there is not.</summary>
+    private void UpdateErrorLogCard() => ErrorLogCard.Description = ViewModel.HasErrorLog
+        ? _loc.Format("ErrorLog_Desc", ViewModel.ErrorLogPath)
+        : _loc.Get("ErrorLog_Empty");
 
     public void FocusFirst() => DispatcherQueue.TryEnqueue(() => BackButton.Focus(FocusState.Programmatic));
 

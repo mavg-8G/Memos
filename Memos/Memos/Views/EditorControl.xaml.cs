@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Globalization;
 using Memos.Core.Markdown;
 using Memos.Core.Models;
 using Memos.Core.Services;
@@ -40,6 +41,9 @@ public sealed partial class EditorControl : UserControl, IEditorSurface
     private bool _updating;
     private bool _hasStyling;
     private IReadOnlyList<SyntaxRun> _runs = [];
+    private bool _invisiblesQueued;
+
+    private SyntaxPalette Palette => SyntaxPalette.For(_settings?.SyntaxTheme ?? SyntaxTheme.Default, ActualTheme == ElementTheme.Dark);
 
     public EditorControl()
     {
@@ -70,6 +74,7 @@ public sealed partial class EditorControl : UserControl, IEditorSurface
         _document = document;
         _settings = settings;
         settings.PropertyChanged += OnSettingsChanged;
+        SyntaxPalette.SystemColorsChanged += OnSystemColorsChanged;
         document.PropertyChanged += OnDocumentPropertyChanged;
 
         ApplyAppearance();
@@ -92,6 +97,7 @@ public sealed partial class EditorControl : UserControl, IEditorSurface
 
         _document.PropertyChanged -= OnDocumentPropertyChanged;
         _settings!.PropertyChanged -= OnSettingsChanged;
+        SyntaxPalette.SystemColorsChanged -= OnSystemColorsChanged;
         _document = null;
     }
 
@@ -165,7 +171,7 @@ public sealed partial class EditorControl : UserControl, IEditorSurface
         }
 
         _hasStyling = true;
-        var palette = SyntaxPalette.For(ActualTheme);
+        var palette = Palette;
         var document = Box.Document;
         _updating = true;
         try
@@ -220,7 +226,7 @@ public sealed partial class EditorControl : UserControl, IEditorSurface
 
         var document = Box.Document;
         var length = _lastText.Length;
-        var color = SyntaxPalette.For(ActualTheme).SearchMatch;
+        var color = Palette.SearchMatch;
         _updating = true;
         try
         {
@@ -376,7 +382,14 @@ public sealed partial class EditorControl : UserControl, IEditorSurface
         var shift = IsDown(VirtualKey.Shift);
         var alt = IsDown(VirtualKey.Menu);
 
-        if (e.Key == VirtualKey.Tab && !control && !alt)
+        if (e.Key == VirtualKey.Insert && !control && !shift && !alt)
+        {
+            // Insert/overwrite is handled by the document so it can be shown in the status bar and
+            // undone properly; the control itself always stays in insert mode.
+            _document.IsOverwrite = !_document.IsOverwrite;
+            e.Handled = true;
+        }
+        else if (e.Key == VirtualKey.Tab && !control && !alt)
         {
             _document.HandleTab(shift);
             e.Handled = true;
@@ -449,11 +462,24 @@ public sealed partial class EditorControl : UserControl, IEditorSurface
     private void OnSettingsChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(AppSettings.FontFamily) or nameof(AppSettings.FontSize) or nameof(AppSettings.WordWrap)
-            or nameof(AppSettings.ShowLineNumbers) or nameof(AppSettings.TabSize))
+            or nameof(AppSettings.ShowLineNumbers) or nameof(AppSettings.TabSize) or nameof(AppSettings.ShowInvisibles))
         {
             ApplyAppearance();
         }
+        else if (e.PropertyName == nameof(AppSettings.SyntaxTheme))
+        {
+            OnThemeChanged();
+        }
     }
+
+    /// <summary>The Windows accent colour changed; it arrives on a background thread.</summary>
+    private void OnSystemColorsChanged(object? sender, EventArgs e) => DispatcherQueue.TryEnqueue(() =>
+    {
+        if (_settings?.SyntaxTheme == SyntaxTheme.Accent)
+        {
+            OnThemeChanged();
+        }
+    });
 
     private void OnDocumentPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -627,7 +653,14 @@ public sealed partial class EditorControl : UserControl, IEditorSurface
         return low;
     }
 
+    /// <summary>Redraws everything painted around the text: line numbers and invisible characters.</summary>
     private void UpdateGutter()
+    {
+        UpdateLineNumbers();
+        QueueInvisibles();
+    }
+
+    private void UpdateLineNumbers()
     {
         if (_document is null || _settings is null || !_settings.ShowLineNumbers || Box.ActualHeight <= 0)
         {
@@ -677,29 +710,147 @@ public sealed partial class EditorControl : UserControl, IEditorSurface
         }
     }
 
-    /// <summary>Text colours for Markdown syntax, chosen to stay readable on Mica in both themes.</summary>
-    private sealed record SyntaxPalette(Color Default, Color Heading, Color Code, Color Link, Color Quote, Color Marker, Color SearchMatch)
+    // ---- Invisible characters -----------------------------------------------------------------------
+
+    /// <summary>Left edge of the text area inside the control (see <see cref="GetTextOriginY"/>).</summary>
+    private double GetTextOriginX() => _scroller is null
+        ? Box.Padding.Left
+        : _scroller.TransformToVisual(Box).TransformPoint(new Point(0, 0)).X + _scroller.Padding.Left;
+
+    private void QueueInvisibles()
     {
-        private static readonly SyntaxPalette Light = new(
-            Color.FromArgb(0xE4, 0, 0, 0), Rgb(0x05, 0x50, 0xAE), Rgb(0x8A, 0x3D, 0x9E), Rgb(0x09, 0x69, 0xDA),
-            Rgb(0x57, 0x60, 0x6A), Rgb(0xC2, 0x3B, 0x22), Rgb(0xFF, 0xE0, 0x8A));
-
-        private static readonly SyntaxPalette Dark = new(
-            Colors.White, Rgb(0x79, 0xC0, 0xFF), Rgb(0xD2, 0xA8, 0xFF), Rgb(0x58, 0xA6, 0xFF),
-            Rgb(0x9D, 0xA7, 0xB3), Rgb(0xFF, 0x9B, 0x8E), Rgb(0x6B, 0x55, 0x10));
-
-        public static SyntaxPalette For(ElementTheme theme) => theme == ElementTheme.Dark ? Dark : Light;
-
-        public Color Get(SyntaxColor color) => color switch
+        if (_invisiblesQueued)
         {
-            SyntaxColor.Heading => Heading,
-            SyntaxColor.Code => Code,
-            SyntaxColor.Link => Link,
-            SyntaxColor.Quote => Quote,
-            SyntaxColor.Marker => Marker,
-            _ => Default,
-        };
+            return;
+        }
 
-        private static Color Rgb(byte r, byte g, byte b) => Color.FromArgb(0xFF, r, g, b);
+        // Scrolling and typing raise bursts of updates; draw once per burst.
+        _invisiblesQueued = true;
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        {
+            _invisiblesQueued = false;
+            UpdateInvisibles();
+        });
+    }
+
+    /// <summary>
+    /// Draws a mark over every space, tab and line end in view. RichEditBox cannot show them itself,
+    /// so they are painted on a layer above it, positioned with the rectangles the control reports.
+    /// Only the visible lines are measured, with a cap so a huge single line cannot stall the UI.
+    /// </summary>
+    private void UpdateInvisibles()
+    {
+        if (_document is null || _settings is null || !_settings.ShowInvisibles || Box.ActualHeight <= 0)
+        {
+            InvisiblesPath.Data = null;
+            return;
+        }
+
+        const int MaxMeasurements = 4000;
+        const int MaxCharacters = 60_000;
+
+        var text = _lastText;
+        var document = Box.Document;
+        var offsetX = GetTextOriginX() - (_scroller?.HorizontalOffset ?? 0);
+        var offsetY = GetTextOriginY() - (_scroller?.VerticalOffset ?? 0);
+        var lineHeight = GetLineHeight();
+        var lineCount = _document.LineCount;
+        var data = new System.Text.StringBuilder(4096);
+        var measurements = 0;
+        var scanned = 0;
+
+        Rect Measure(int start, int end)
+        {
+            measurements++;
+            document.GetRange(start, end).GetRect(PointOptions.ClientCoordinates, out var rect, out _);
+            return new Rect(rect.X + offsetX, rect.Y + offsetY, rect.Width, rect.Height);
+        }
+
+        void Dot(double x, double y) => data.Append(CultureInfo.InvariantCulture, $"M{x:0.#},{y:0.#}h0.01 ");
+
+        for (var line = FindFirstVisibleLine(); line < lineCount && measurements < MaxMeasurements && scanned < MaxCharacters; line++)
+        {
+            var start = _document.GetLineStart(line);
+            var end = line + 1 < lineCount ? _document.GetLineStart(line + 1) - 1 : text.Length;
+            if (start > text.Length || end > text.Length)
+            {
+                break; // the text changed under us; the next update will catch up
+            }
+
+            if (Measure(start, start).Top > Box.ActualHeight)
+            {
+                break;
+            }
+
+            for (var i = start; i < end && measurements < MaxMeasurements && scanned < MaxCharacters; scanned++)
+            {
+                var c = text[i];
+                if (c == ' ')
+                {
+                    var runEnd = i + 1;
+                    while (runEnd < end && text[runEnd] == ' ')
+                    {
+                        runEnd++;
+                    }
+
+                    var count = runEnd - i;
+                    var rect = Measure(i, runEnd);
+                    if (count > 1 && rect.Height > lineHeight * 1.5)
+                    {
+                        // The run wraps onto another visual line: place each space on its own.
+                        for (var k = i; k < runEnd; k++)
+                        {
+                            var single = Measure(k, k + 1);
+                            Dot(single.Left + single.Width / 2, single.Top + single.Height / 2);
+                        }
+                    }
+                    else
+                    {
+                        var step = rect.Width / count;
+                        for (var k = 0; k < count; k++)
+                        {
+                            Dot(rect.Left + step * (k + 0.5), rect.Top + rect.Height / 2);
+                        }
+                    }
+
+                    i = runEnd;
+                }
+                else if (c == '\t')
+                {
+                    var rect = Measure(i, i + 1);
+                    var y = rect.Top + rect.Height / 2;
+                    var tip = Math.Max(rect.Left + 4, rect.Right - 2);
+                    data.Append(CultureInfo.InvariantCulture, $"M{rect.Left + 2:0.#},{y:0.#}L{tip:0.#},{y:0.#}M{tip - 3:0.#},{y - 3:0.#}L{tip:0.#},{y:0.#}L{tip - 3:0.#},{y + 3:0.#} ");
+                    i++;
+                }
+                else if (c == '\u00A0')
+                {
+                    // A non-breaking space looks like a space but is a different character: a small ring.
+                    var rect = Measure(i, i + 1);
+                    var x = rect.Left + rect.Width / 2;
+                    var y = rect.Top + rect.Height / 2;
+                    data.Append(CultureInfo.InvariantCulture, $"M{x - 2:0.#},{y:0.#}A2,2 0 1 0 {x + 2:0.#},{y:0.#}A2,2 0 1 0 {x - 2:0.#},{y:0.#} ");
+                    i++;
+                }
+                else
+                {
+                    i++;
+                }
+            }
+
+            if (line + 1 < lineCount)
+            {
+                // Line break: a "return" arrow just after the last character.
+                var rect = Measure(end, end);
+                var x = rect.Left + 3;
+                var y = rect.Top + rect.Height / 2;
+                data.Append(CultureInfo.InvariantCulture, $"M{x + 7:0.#},{y - 3:0.#}V{y + 1:0.#}H{x:0.#}M{x + 2.5:0.#},{y - 1.5:0.#}L{x:0.#},{y + 1:0.#}L{x + 2.5:0.#},{y + 3.5:0.#} ");
+            }
+        }
+
+        Invisibles.Clip = new RectangleGeometry { Rect = new Rect(0, 0, Box.ActualWidth, Box.ActualHeight) };
+        InvisiblesPath.Data = data.Length == 0
+            ? null
+            : (Geometry)Microsoft.UI.Xaml.Markup.XamlBindingHelper.ConvertValue(typeof(Geometry), data.ToString());
     }
 }

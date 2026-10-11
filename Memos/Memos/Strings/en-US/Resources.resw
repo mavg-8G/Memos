@@ -254,4 +254,29 @@
   <data name="Set_Associations_Button" xml:space="preserve"><value>Open default apps</value></data>
   <data name="About_Privacy" xml:space="preserve"><value>Works offline. No telemetry, no accounts, no ads and no artificial intelligence.</value></data>
   <data name="About_Version" xml:space="preserve"><value>Version {0}</value></data>
+  <data name="Cmd_FindInTabs" xml:space="preserve"><value>Find in all tabs…</value></data>
+  <data name="Cmd_Invisibles" xml:space="preserve"><value>Show invisible characters</value></data>
+  <data name="Set_Invisibles_Desc" xml:space="preserve"><value>Marks spaces (·), tabs (→) and line breaks (↵) over the text. It is only a visual aid; the file is not changed.</value></data>
+  <data name="Status_Insert" xml:space="preserve"><value>INS</value></data>
+  <data name="Status_Overwrite" xml:space="preserve"><value>OVR</value></data>
+  <data name="Status_InsertMode" xml:space="preserve"><value>Insert (INS) or overwrite (OVR) mode. Toggle with the Insert key.</value></data>
+  <data name="GlobalSearch_Title" xml:space="preserve"><value>Find in all tabs</value></data>
+  <data name="GlobalSearch_Search" xml:space="preserve"><value>Search</value></data>
+  <data name="GlobalSearch_Results" xml:space="preserve"><value>Search results</value></data>
+  <data name="GlobalSearch_Summary" xml:space="preserve"><value>{0} matches in {1} tabs</value></data>
+  <data name="GlobalSearch_SummaryTruncated" xml:space="preserve"><value>{0} matches in {1} tabs (showing the first {2})</value></data>
+  <data name="GlobalSearch_ConfirmTitle" xml:space="preserve"><value>Replace in all tabs?</value></data>
+  <data name="GlobalSearch_Confirm" xml:space="preserve"><value>{0} matches in {1} tabs will be replaced. Files are not saved automatically and each tab can undo the change with Ctrl+Z.</value></data>
+  <data name="GlobalSearch_Replaced" xml:space="preserve"><value>{0} replaced in {1} tabs</value></data>
+  <data name="Set_SyntaxTheme" xml:space="preserve"><value>Highlighting colours</value></data>
+  <data name="Set_SyntaxTheme_Desc" xml:space="preserve"><value>Colours of Markdown syntax and search matches in the editor.</value></data>
+  <data name="SyntaxTheme_Default" xml:space="preserve"><value>Default</value></data>
+  <data name="SyntaxTheme_Accent" xml:space="preserve"><value>Windows accent colour</value></data>
+  <data name="SyntaxTheme_Monochrome" xml:space="preserve"><value>Monochrome</value></data>
+  <data name="ErrorLog_Title" xml:space="preserve"><value>Error log</value></data>
+  <data name="ErrorLog_Empty" xml:space="preserve"><value>No errors have been recorded.</value></data>
+  <data name="ErrorLog_Desc" xml:space="preserve"><value>Unexpected errors, stored on this computer only. You can review them and attach them when reporting a problem: {0}</value></data>
+  <data name="ErrorLog_Open" xml:space="preserve"><value>Open</value></data>
+  <data name="ErrorLog_Copy" xml:space="preserve"><value>Copy</value></data>
+  <data name="ErrorLog_Clear" xml:space="preserve"><value>Delete</value></data>
 </root>

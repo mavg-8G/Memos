@@ -70,6 +70,7 @@ public sealed partial class MainWindow : Window
         AppWindow.Closing += OnWindowClosing;
         Activated += OnActivated;
 
+        GlobalSearchHost.Children.Add(new GlobalSearchPanel(ViewModel.GlobalSearch));
         BuildHeadingMenus();
         BuildRecentMenu();
         OnActiveDocumentChanged();
@@ -597,6 +598,7 @@ public sealed partial class MainWindow : Window
             (true, false, false, VirtualKey.Tab) => ViewModel.NextTabCommand,
             (true, true, false, VirtualKey.Tab) => ViewModel.PreviousTabCommand,
             (true, false, false, VirtualKey.F) => ViewModel.FindCommand,
+            (true, true, false, VirtualKey.F) => ViewModel.FindInTabsCommand,
             (true, false, false, VirtualKey.H) => ViewModel.ReplaceCommand,
             (true, false, false, VirtualKey.G) => ViewModel.GoToLineCommand,
             (true, false, false, (VirtualKey)188) => ViewModel.OpenSettingsCommand, // Ctrl+,

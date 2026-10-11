@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Memos.Views.GlobalSearchPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:h="using:Memos.Helpers"
+    xmlns:vm="using:Memos.Core.ViewModels">
+
+    <!-- Find and replace across every open tab; docked under the editor. -->
+    <Grid x:Name="PanelRoot"
+          Height="250"
+          Visibility="{x:Bind h:Ui.Visible(ViewModel.IsVisible), Mode=OneWay}"
+          BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+          BorderThickness="0,1,0,0"
+          RowSpacing="6"
+          Padding="12,8,8,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid ColumnSpacing="6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" MaxWidth="300" />
+                <ColumnDefinition Width="*" MaxWidth="300" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock VerticalAlignment="Center" Style="{StaticResource BodyStrongTextBlockStyle}" Text="{h:Loc Key=GlobalSearch_Title}" />
+
+            <TextBox x:Name="GlobalQueryBox"
+                     Grid.Column="1"
+                     PlaceholderText="{h:Loc Key=Find_Placeholder}"
+                     AutomationProperties.Name="{h:Loc Key=GlobalSearch_Title}"
+                     Text="{x:Bind ViewModel.Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     IsSpellCheckEnabled="False"
+                     KeyDown="OnQueryKeyDown" />
+            <TextBox x:Name="GlobalReplaceBox"
+                     Grid.Column="2"
+                     PlaceholderText="{h:Loc Key=Find_ReplacePlaceholder}"
+                     AutomationProperties.Name="{h:Loc Key=Find_ReplacePlaceholder}"
+                     Text="{x:Bind ViewModel.Replacement, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     IsSpellCheckEnabled="False"
+                     KeyDown="OnQueryKeyDown" />
+
+            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="2">
+                <ToggleButton Style="{StaticResource IconToggleButtonStyle}"
+                              IsChecked="{x:Bind ViewModel.MatchCase, Mode=TwoWay}"
+                              AutomationProperties.Name="{h:Loc Key=Find_MatchCase}"
+                              ToolTipService.ToolTip="{h:Loc Key=Find_MatchCase}">
+                    <TextBlock Text="Aa" FontSize="13" />
+                </ToggleButton>
+                <ToggleButton Style="{StaticResource IconToggleButtonStyle}"
+                              IsChecked="{x:Bind ViewModel.WholeWord, Mode=TwoWay}"
+                              AutomationProperties.Name="{h:Loc Key=Find_WholeWord}"
+                              ToolTipService.ToolTip="{h:Loc Key=Find_WholeWord}">
+                    <TextBlock Text="ab" FontSize="13" TextDecorations="Underline" />
+                </ToggleButton>
+                <ToggleButton Style="{StaticResource IconToggleButtonStyle}"
+                              IsChecked="{x:Bind ViewModel.UseRegex, Mode=TwoWay}"
+                              AutomationProperties.Name="{h:Loc Key=Find_Regex}"
+                              ToolTipService.ToolTip="{h:Loc Key=Find_Regex}">
+                    <TextBlock Text=".*" FontSize="13" />
+                </ToggleButton>
+                <Button x:Name="GlobalSearchButton"
+                        Margin="6,0,0,0"
+                        Content="{h:Loc Key=GlobalSearch_Search}"
+                        Command="{x:Bind ViewModel.SearchCommand}"
+                        Style="{StaticResource AccentButtonStyle}" />
+                <Button x:Name="GlobalReplaceAllButton"
+                        Margin="4,0,0,0"
+                        Content="{h:Loc Key=Find_ReplaceAll}"
+                        Command="{x:Bind ViewModel.ReplaceAllCommand}" />
+            </StackPanel>
+
+            <TextBlock x:Name="GlobalSummaryText"
+                       Grid.Column="4"
+                       Margin="8,0"
+                       VerticalAlignment="Center"
+                       Style="{StaticResource CaptionTextBlockStyle}"
+                       AutomationProperties.LiveSetting="Polite"
+                       Text="{x:Bind ViewModel.Summary, Mode=OneWay}"
+                       TextTrimming="CharacterEllipsis" />
+
+            <Button Grid.Column="5"
+                    Style="{StaticResource IconButtonStyle}"
+                    Command="{x:Bind ViewModel.CloseCommand}"
+                    AutomationProperties.Name="{h:Loc Key=Find_Close}"
+                    ToolTipService.ToolTip="{h:Loc Key=Find_Close}">
+                <FontIcon Glyph="&#xE711;" FontSize="12" />
+            </Button>
+        </Grid>
+
+        <ListView x:Name="GlobalResultsList"
+                  Grid.Row="1"
+                  AutomationProperties.Name="{h:Loc Key=GlobalSearch_Results}"
+                  IsItemClickEnabled="True"
+                  ItemClick="OnResultClick"
+                  ItemsSource="{x:Bind ViewModel.Results}"
+                  SelectionMode="None">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem" BasedOn="{StaticResource DefaultListViewItemStyle}">
+                    <Setter Property="MinHeight" Value="30" />
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="vm:GlobalSearchResult">
+                    <Grid ColumnSpacing="16" AutomationProperties.Name="{x:Bind Location}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="200" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   VerticalAlignment="Center"
+                                   Text="{x:Bind Location}"
+                                   TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="1"
+                                   FontFamily="Cascadia Mono, Consolas"
+                                   FontSize="12.5"
+                                   VerticalAlignment="Center"
+                                   Text="{x:Bind Preview}"
+                                   TextTrimming="CharacterEllipsis" />
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </Grid>
+</UserControl>

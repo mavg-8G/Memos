@@ -23,6 +23,7 @@ public partial class MainViewModel : ObservableObject
     private readonly IPdfExporter _pdf;
     private readonly IMarkdownService _markdown;
     private readonly ILocalizer _loc;
+    private readonly IErrorLog _errorLog;
     private readonly DocumentServices _documentServices;
     private readonly Debouncer _sessionDebouncer = new();
     private readonly Dictionary<Guid, Debouncer> _autoSaveDebouncers = [];
@@ -32,8 +33,11 @@ public partial class MainViewModel : ObservableObject
     public MainViewModel(
         ISettingsService settings, IFileService files, IRecentFilesService recent, ISessionService session,
         IDialogService dialogs, IFilePickerService pickers, IClipboardService clipboard, IPdfExporter pdf,
-        ISearchService search, IMarkdownService markdown, ILocalizer localizer)
+        ISearchService search, IMarkdownService markdown, ILocalizer localizer, IErrorLog errorLog)
     {
+        _errorLog = errorLog;
+        GlobalSearch = new GlobalSearchViewModel(() => Documents, document => ActiveDocument = document, search, dialogs, localizer);
+        HasErrorLog = errorLog.HasEntries;
         _files = files;
         _recent = recent;
         _session = session;
@@ -68,6 +72,12 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] public partial DocumentViewModel? ActiveDocument { get; set; }
     [ObservableProperty] public partial bool IsSettingsOpen { get; set; }
     [ObservableProperty] public partial bool IsMarkdownActive { get; private set; }
+    [ObservableProperty] public partial bool HasErrorLog { get; private set; }
+
+    /// <summary>Find and replace across all open tabs.</summary>
+    public GlobalSearchViewModel GlobalSearch { get; }
+
+    public string ErrorLogPath => _errorLog.FilePath;
 
     public bool HasDocument => ActiveDocument is not null;
 
@@ -401,7 +411,56 @@ public partial class MainViewModel : ObservableObject
     private void ResetZoom() => ActiveDocument?.ResetZoom();
 
     [RelayCommand]
-    private void OpenSettings() => IsSettingsOpen = true;
+    private void OpenSettings()
+    {
+        HasErrorLog = _errorLog.HasEntries;
+        IsSettingsOpen = true;
+    }
+
+    [RelayCommand]
+    private void FindInTabs()
+    {
+        IsSettingsOpen = false;
+        GlobalSearch.Show(ActiveDocument?.SelectedText);
+    }
+
+    [RelayCommand(CanExecute = nameof(HasDocument))]
+    private void ToggleOverwrite()
+    {
+        if (ActiveDocument is { } document)
+        {
+            document.IsOverwrite = !document.IsOverwrite;
+        }
+    }
+
+    // ---- Error log ----------------------------------------------------------------------------------
+
+    /// <summary>Opens the error log in a tab so it can be read or attached to a report.</summary>
+    [RelayCommand]
+    private async Task OpenErrorLogAsync()
+    {
+        if (_errorLog.HasEntries)
+        {
+            IsSettingsOpen = false;
+            await OpenPathsAsync([_errorLog.FilePath]);
+        }
+    }
+
+    [RelayCommand]
+    private void CopyErrorLog()
+    {
+        if (_errorLog.Read() is { Length: > 0 } text)
+        {
+            _clipboard.SetText(text);
+        }
+    }
+
+    [RelayCommand]
+    private void ClearErrorLog()
+    {
+        _errorLog.Clear();
+        HasErrorLog = _errorLog.HasEntries;
+    }
 
     [RelayCommand]
     private void CloseSettings()
@@ -598,7 +657,7 @@ public partial class MainViewModel : ObservableObject
     private void CopyHtml()
     {
         var document = ActiveDocument!;
-        var analysis = _markdown.Analyze(document.Text, new MarkdownRenderOptions(CodeHighlighting: false));
+        var analysis = _markdown.Analyze(document.Text, new MarkdownRenderOptions(CodeHighlighting: false, IncludeFrontMatter: false));
         // Rich editors receive formatted content; plain-text targets receive the HTML source.
         var html = string.Concat(analysis.Blocks.Select(b => b.Html));
         _clipboard.SetHtml(html, html);
@@ -608,8 +667,11 @@ public partial class MainViewModel : ObservableObject
     public string BuildExportHtml(DocumentViewModel document, bool forPdf)
     {
         var analysis = _markdown.Analyze(document.Text,
-            new MarkdownRenderOptions(Settings.CodeHighlighting, forPdf ? document.PreviewResourceBase : null));
-        return HtmlDocumentBuilder.BuildPage(GetBaseName(document), HtmlDocumentBuilder.WrapBlocks(analysis.Blocks), new HtmlPageOptions
+            new MarkdownRenderOptions(Settings.CodeHighlighting, forPdf ? document.PreviewResourceBase : null, IncludeFrontMatter: false));
+
+        // Front matter is metadata: it is not part of the exported body, but its title names the page.
+        var title = analysis.FrontMatter?["title"] is { Length: > 0 } declared ? declared : GetBaseName(document);
+        return HtmlDocumentBuilder.BuildPage(title, HtmlDocumentBuilder.WrapBlocks(analysis.Blocks), new HtmlPageOptions
         {
             Dark = forPdf ? false : null,
             Style = Settings.PreviewStyle,
@@ -1097,7 +1159,7 @@ public partial class MainViewModel : ObservableObject
                      MoveLineUpCommand, MoveLineDownCommand, UppercaseCommand, LowercaseCommand, TrimTrailingWhitespaceCommand,
                      IndentCommand, OutdentCommand, IndentationToSpacesCommand, IndentationToTabsCommand, ZoomInCommand, ZoomOutCommand,
                      ResetZoomCommand, SetKindCommand, SetViewModeCommand, ToggleOutlineCommand, SetEncodingCommand,
-                     ReopenWithEncodingCommand, SetLineEndingCommand, BoldCommand, ItalicCommand, StrikethroughCommand, InlineCodeCommand,
+                     ReopenWithEncodingCommand, SetLineEndingCommand, ToggleOverwriteCommand, BoldCommand, ItalicCommand, StrikethroughCommand, InlineCodeCommand,
                      HeadingCommand, QuoteCommand, BulletListCommand, NumberedListCommand, TaskListCommand, CodeBlockCommand,
                      HorizontalRuleCommand, LinkCommand, ImageCommand, ExportHtmlCommand, ExportPdfCommand, CopyHtmlCommand,
                  })

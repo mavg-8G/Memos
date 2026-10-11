@@ -39,6 +39,8 @@ public static class Ui
 
     public static string Percent(int value) => $"{value}%";
 
+    public static string InsertMode(bool overwrite) => Localizer.Instance!.Get(overwrite ? "Status_Overwrite" : "Status_Insert");
+
     public static string Position(int line, int column) => Localizer.Instance!.Format("Status_Position", line, column);
 
     public static string Characters(int count) => Localizer.Instance!.Format("Status_Characters", count.ToString("N0"));

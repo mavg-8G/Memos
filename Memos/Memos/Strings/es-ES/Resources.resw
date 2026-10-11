@@ -254,4 +254,29 @@
   <data name="Set_Associations_Button" xml:space="preserve"><value>Abrir aplicaciones predeterminadas</value></data>
   <data name="About_Privacy" xml:space="preserve"><value>Funciona sin conexión. Sin telemetría, sin cuentas, sin publicidad y sin inteligencia artificial.</value></data>
   <data name="About_Version" xml:space="preserve"><value>Versión {0}</value></data>
+  <data name="Cmd_FindInTabs" xml:space="preserve"><value>Buscar en todas las pestañas…</value></data>
+  <data name="Cmd_Invisibles" xml:space="preserve"><value>Mostrar caracteres invisibles</value></data>
+  <data name="Set_Invisibles_Desc" xml:space="preserve"><value>Marca los espacios (·), las tabulaciones (→) y los saltos de línea (↵) sobre el texto. Es solo una ayuda visual; no cambia el archivo.</value></data>
+  <data name="Status_Insert" xml:space="preserve"><value>INS</value></data>
+  <data name="Status_Overwrite" xml:space="preserve"><value>SOB</value></data>
+  <data name="Status_InsertMode" xml:space="preserve"><value>Modo de inserción (INS) o sobrescritura (SOB). Cambia con la tecla Insert.</value></data>
+  <data name="GlobalSearch_Title" xml:space="preserve"><value>Buscar en todas las pestañas</value></data>
+  <data name="GlobalSearch_Search" xml:space="preserve"><value>Buscar</value></data>
+  <data name="GlobalSearch_Results" xml:space="preserve"><value>Resultados de la búsqueda</value></data>
+  <data name="GlobalSearch_Summary" xml:space="preserve"><value>{0} coincidencias en {1} pestañas</value></data>
+  <data name="GlobalSearch_SummaryTruncated" xml:space="preserve"><value>{0} coincidencias en {1} pestañas (se muestran las primeras {2})</value></data>
+  <data name="GlobalSearch_ConfirmTitle" xml:space="preserve"><value>¿Reemplazar en todas las pestañas?</value></data>
+  <data name="GlobalSearch_Confirm" xml:space="preserve"><value>Se reemplazarán {0} coincidencias en {1} pestañas. Los archivos no se guardan automáticamente y cada pestaña puede deshacer el cambio con Ctrl+Z.</value></data>
+  <data name="GlobalSearch_Replaced" xml:space="preserve"><value>{0} reemplazos en {1} pestañas</value></data>
+  <data name="Set_SyntaxTheme" xml:space="preserve"><value>Colores del resaltado</value></data>
+  <data name="Set_SyntaxTheme_Desc" xml:space="preserve"><value>Colores de la sintaxis Markdown y de las coincidencias de búsqueda en el editor.</value></data>
+  <data name="SyntaxTheme_Default" xml:space="preserve"><value>Predeterminado</value></data>
+  <data name="SyntaxTheme_Accent" xml:space="preserve"><value>Color de acento de Windows</value></data>
+  <data name="SyntaxTheme_Monochrome" xml:space="preserve"><value>Monocromo</value></data>
+  <data name="ErrorLog_Title" xml:space="preserve"><value>Registro de errores</value></data>
+  <data name="ErrorLog_Empty" xml:space="preserve"><value>No se ha registrado ningún error.</value></data>
+  <data name="ErrorLog_Desc" xml:space="preserve"><value>Errores inesperados, guardados solo en este equipo. Puedes revisarlos y adjuntarlos al informar de un problema: {0}</value></data>
+  <data name="ErrorLog_Open" xml:space="preserve"><value>Abrir</value></data>
+  <data name="ErrorLog_Copy" xml:space="preserve"><value>Copiar</value></data>
+  <data name="ErrorLog_Clear" xml:space="preserve"><value>Borrar</value></data>
 </root>

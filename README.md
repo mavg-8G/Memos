@@ -17,10 +17,13 @@ Editor de texto y de Markdown para Windows 11, nativo (C#, .NET 10, WinUI 3 / Wi
 - UTF-8 (con y sin BOM), UTF-16 LE/BE (con BOM o detectado sin él) y Windows-1252 como respaldo. Detección de BOM, validación de secuencias inválidas, «reabrir con codificación» y «guardar con codificación», con aviso antes de conversiones con pérdida.
 - Saltos de línea CRLF / LF / CR detectados, conservados y convertibles desde la barra de estado.
 - Buscar y reemplazar integrado: incremental, resaltado de coincidencias, mayúsculas/minúsculas, palabra completa, expresiones regulares (con grupos `$1`), contador, reemplazar uno/todos.
+- Buscar y reemplazar en **todas las pestañas abiertas** (`Ctrl+Mayús+F`): lista de resultados con pestaña y línea, y reemplazo global con confirmación (un paso de deshacer por pestaña; no guarda nada por su cuenta).
+- **Caracteres invisibles** opcionales: marca espacios (·), tabulaciones (→), saltos de línea (↵) y espacios duros (○) sobre el texto.
+- **Modo inserción / sobrescritura** con la tecla Insert, indicado en la barra de estado (INS / SOB).
 - Ir a línea, números de línea, ajuste de línea, zoom, sangría automática, tabulaciones o espacios, tamaño de tabulación.
 - Duplicar, eliminar y mover líneas; MAYÚSCULAS/minúsculas; quitar espacios finales; aumentar/reducir sangría; convertir sangría entre espacios y tabulaciones.
 - Deshacer/rehacer por pasos (la escritura se agrupa por palabras).
-- Barra de estado: línea y columna (por grafemas), caracteres, palabras, codificación, salto de línea y zoom.
+- Barra de estado: línea y columna (por grafemas), caracteres, palabras, modo de inserción, codificación, salto de línea y zoom.
 - Fuente, tamaño y zoom son **preferencias visuales**: un `.txt` nunca recibe formato ni marcado.
 
 **Editor Markdown**
@@ -28,13 +31,16 @@ Editor de texto y de Markdown para Windows 11, nativo (C#, .NET 10, WinUI 3 / Wi
 - Tres modos: solo edición, vista dividida y solo vista previa. Vista previa en tiempo real que actualiza solo los bloques que cambian.
 - CommonMark + extensiones GFM: tablas, listas de tareas, tachado, enlaces automáticos, notas al pie, identificadores de encabezado.
 - Barra de formato: encabezados, negrita, cursiva, tachado, código, enlace, imagen, listas, tareas, cita, bloque de código, tabla y separador. Solo escribe Markdown estándar.
-- Resaltado de sintaxis en el editor, tabla de contenidos navegable, desplazamiento sincronizado (el editor guía a la vista previa), imágenes locales, palabras y tiempo de lectura.
+- Resaltado de sintaxis en el editor con tres temas de color: predeterminado, **color de acento de Windows** (se adapta al acento y al tema claro/oscuro, y cambia en vivo si cambias el acento) y monocromo.
+- **Front matter YAML**: el bloque de metadatos inicial (`---`) se muestra aparte como tabla en la vista previa, nunca se interpreta como Markdown, no entra en la tabla de contenidos ni en la exportación, y su `title` da título al HTML/PDF exportado.
+- Tabla de contenidos navegable, desplazamiento sincronizado (el editor guía a la vista previa), imágenes locales, palabras y tiempo de lectura.
 - Exportación a HTML (autónomo, claro/oscuro) y a PDF; copiar como HTML.
 
 **Windows 11**
 
 - Controles Fluent nativos, Mica / Mica Alt / Acrílico, tema claro, oscuro o del sistema, color de acento, DPI por monitor.
 - Interfaz en español e inglés. Configuración persistente que se aplica sin reiniciar (salvo el idioma).
+- **Registro de errores** local (`crash.log`): desde Configuración → Acerca de se puede abrir en una pestaña, copiar o borrar, para adjuntarlo al informar de un problema.
 
 ## Requisitos
 
@@ -52,6 +58,8 @@ Memos/
                      Resources, Themes, Strings (es-ES, en-US), Assets
   Memos (Package)/   Proyecto de empaquetado MSIX (manifiesto, logotipos)
   Memos.Tests/       Pruebas xUnit de Memos.Core
+  Memos.UITests/     Pruebas de interfaz: arrancan la app real y la manejan por UI Automation
+tools/New-BrandAssets.ps1   Genera el icono y todas las imágenes del paquete
 docs/ARQUITECTURA.md
 ```
 
@@ -77,7 +85,23 @@ Memos\Memos\bin\x64\Debug\net10.0-windows10.0.26100.0\Memos.exe
 dotnet test Memos/Memos.Tests
 ```
 
-157 pruebas: codificaciones y BOM, Unicode (emojis, RTL, combinados), saltos de línea, documentos vacíos y grandes, solo lectura, rutas inexistentes, archivos bloqueados, búsqueda y reemplazo, deshacer, operaciones de línea, renderizado y seguridad de Markdown, exportación HTML, cierre con cambios pendientes, recuperación de sesión y persistencia de preferencias.
+180 pruebas del núcleo: codificaciones y BOM, Unicode (emojis, RTL, combinados), saltos de línea, documentos vacíos y grandes, solo lectura, rutas inexistentes, archivos bloqueados, búsqueda y reemplazo (en un documento y en todas las pestañas), deshacer, modo sobrescritura, operaciones de línea, renderizado y seguridad de Markdown, front matter, exportación HTML, cierre con cambios pendientes, recuperación de sesión, registro de errores y persistencia de preferencias.
+
+### Pruebas de interfaz
+
+`Memos.UITests` arranca el `Memos.exe` real y lo maneja como lo haría un lector de pantalla (UI Automation), comprobando el resultado en pantalla y en disco. Necesitan la compilación sin empaquetar:
+
+```bash
+dotnet build Memos/Memos/Memos.csproj -c Debug -p:Platform=x64 -p:MemosUnpackaged=true
+```
+
+```bash
+dotnet test Memos/Memos.UITests
+```
+
+Son 15 pruebas (unos 40 s): arranque, escritura con Tab/Intro y emojis, pestañas y espacio de trabajo, comandos de menú y deshacer, guardado byte a byte, tecla Insert y sobrescritura, barra de búsqueda, búsqueda y reemplazo en todas las pestañas, aviso al cerrar con cambios, archivo inexistente al arrancar, instancia única, front matter y tabla de contenidos, configuración y registro de errores. Abren ventanas de verdad, así que no conviene usar el equipo mientras corren. Cada prueba usa su propia carpeta de datos temporal: no toca tus preferencias ni se mezcla con un Memos que tengas abierto. La variable `MEMOS_EXE` permite apuntar a otro ejecutable.
+
+No cubren el contenido de la vista previa (el WebView2 expone un árbol de accesibilidad aparte que vuelve poco fiables las búsquedas), ni arrastrar y soltar, ni los atajos con modificadores.
 
 ## Empaquetado MSIX
 
@@ -96,7 +120,13 @@ Para ARM64 usa `/p:Platform=ARM64`. La identidad, la versión y las asociaciones
 ## Nombre e icono
 
 - Nombre y versión: `Product`, `AssemblyName` y `Version` en `Memos/Memos/Memos.csproj`; `DisplayName` e `Identity` en `Package.appxmanifest`.
-- Icono: `Memos/Memos/Assets/Memos.ico` y las imágenes de `Memos (Package)/Images`.
+- Icono: se dibuja por código en `tools/New-BrandAssets.ps1`, que genera `Memos/Memos/Assets/Memos.ico` (9 tamaños) y las 77 imágenes de `Memos (Package)/Images` (iconos de barra de tareas e Inicio, mosaicos, logotipo de la Store y pantalla de bienvenida, en todas las escalas). Para cambiar la marca, ajusta los colores (`-TileStart`, `-TileEnd`) o el dibujo y vuelve a ejecutarlo:
+
+```bash
+pwsh tools/New-BrandAssets.ps1
+```
+
+  Con `-PreviewPath icono.png` solo genera una hoja de muestra, sin tocar el proyecto.
 
 ## Atajos de teclado
 
@@ -107,6 +137,7 @@ Para ARM64 usa `/p:Platform=ARM64`. La identidad, la versión y las asociaciones
 | Ctrl+W | Cerrar pestaña | Ctrl+Mayús+T | Reabrir pestaña |
 | Ctrl+Tab / Ctrl+Mayús+Tab | Pestaña siguiente / anterior | Ctrl+, | Configuración |
 | Ctrl+Z / Ctrl+Y | Deshacer / rehacer | Ctrl+F / Ctrl+H / F3 | Buscar / reemplazar / siguiente |
+| Ctrl+Mayús+F | Buscar en todas las pestañas | Insert | Inserción / sobrescritura |
 | Ctrl+G | Ir a línea | Ctrl++ / Ctrl+- / Ctrl+0 | Zoom |
 | Ctrl+D | Duplicar línea | Ctrl+Mayús+K | Eliminar línea |
 | Alt+↑ / Alt+↓ | Mover línea | Ctrl+U / Ctrl+Mayús+U | minúsculas / MAYÚSCULAS |
@@ -119,13 +150,16 @@ Declarados para que nada parezca implementado sin estarlo:
 
 - **Tamaño de archivo.** Se pide confirmación por encima de 2 MB y se rechazan los de más de 10 MB. El control de edición (RichEditBox) maqueta el documento completo al abrirlo. Medido en este equipo: 1 MB ASCII ≈ 1 s; 5,6 MB ASCII ≈ 4 s; 1 MB con muchos acentos ≈ 5–9 s; 5,6 MB con muchos acentos ≈ 2,5 min con la ventana sin responder. Una vez abierto, escribir en un archivo de 1 MB es fluido. El resaltado Markdown en el editor se desactiva por encima de 300 000 caracteres.
 - **Texto enriquecido (RTF):** no incluido. La aplicación trabaja con texto plano y Markdown.
-- **Caracteres invisibles** y **estado de inserción/sobrescritura:** el control de edición no los expone.
+- **Caracteres invisibles:** se dibujan en una capa sobre el texto, solo para las líneas visibles. En una línea descomunal (más de 60 000 caracteres a la vista) se marcan solo los primeros.
+- **Sobrescritura:** el cursor no cambia de forma (el control no lo permite); el modo se ve en la barra de estado. Pegar siempre inserta.
+- **Front matter:** se lee como pares `clave: valor` de primer nivel para mostrarlo; no es un intérprete YAML completo. Si el bloque no tiene esa forma se muestra tal cual.
 - **HTML dentro de Markdown:** por seguridad se muestra como texto, no se interpreta.
 - **Desplazamiento sincronizado:** del editor a la vista previa, no al revés.
 - **Saltos de línea mezclados:** se detectan y se avisa; al guardar se unifican con el predominante.
 - **Vista previa de imágenes locales:** las situadas en la carpeta del documento o por debajo de ella; un documento sin guardar no tiene carpeta.
 - **Imprimir:** no incluido (se puede exportar a PDF).
 - **Mayúsculas/minúsculas en búsqueda:** no equipara formas Unicode precompuestas y descompuestas.
+- **Búsqueda en todas las pestañas:** busca en las pestañas abiertas, no en carpetas del disco; la lista muestra como máximo 2000 coincidencias.
 
 ## Privacidad y seguridad
 

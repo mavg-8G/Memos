@@ -79,6 +79,19 @@ public sealed class UndoHistory
         Trim();
     }
 
+    /// <summary>
+    /// Adds text that the last step also removed, right after what it inserted. Used by overwrite
+    /// mode, where typing a character replaces the one under the caret within the same step.
+    /// </summary>
+    public void ExtendLastRemoved(string removedAfter)
+    {
+        if (_undo.Count > 0 && removedAfter.Length > 0)
+        {
+            _undo[^1].Removed += removedAfter;
+            _storedChars += removedAfter.Length;
+        }
+    }
+
     /// <summary>Returns the edit that reverts the last step, or null if there is none.</summary>
     public TextEdit? Undo()
     {

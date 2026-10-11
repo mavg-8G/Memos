@@ -25,7 +25,13 @@ public static partial class Program
         WinRT.ComWrappersSupport.InitializeComWrappers();
 
         var activation = AppInstance.GetCurrent().GetActivatedEventArgs();
-        var main = AppInstance.FindOrRegisterForKey(InstanceKey);
+        // A redirected data folder (portable use, automated tests) is a separate installation as far
+        // as single-instancing goes, so it never hands its files to the user's normal window.
+        var dataDirectory = Environment.GetEnvironmentVariable("MEMOS_DATA_DIR");
+        var key = string.IsNullOrEmpty(dataDirectory)
+            ? InstanceKey
+            : $"{InstanceKey}.{Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(Path.GetFullPath(dataDirectory).ToUpperInvariant())))[..16]}";
+        var main = AppInstance.FindOrRegisterForKey(key);
         if (!main.IsCurrent)
         {
             RedirectTo(main, activation);

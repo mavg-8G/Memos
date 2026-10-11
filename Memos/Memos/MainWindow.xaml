@@ -148,6 +148,7 @@
                         <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE721;" /></MenuFlyoutItem.Icon>
                     </MenuFlyoutItem>
                     <MenuFlyoutItem Text="{h:Loc Key=Cmd_Replace}" Command="{x:Bind ViewModel.ReplaceCommand}" KeyboardAcceleratorTextOverride="Ctrl+H" />
+                    <MenuFlyoutItem Text="{h:Loc Key=Cmd_FindInTabs}" Command="{x:Bind ViewModel.FindInTabsCommand}" KeyboardAcceleratorTextOverride="Ctrl+Shift+F" />
                     <MenuFlyoutItem Text="{h:Loc Key=Cmd_GoToLine}" Command="{x:Bind ViewModel.GoToLineCommand}" KeyboardAcceleratorTextOverride="Ctrl+G" />
                     <MenuFlyoutSeparator />
                     <MenuFlyoutSubItem Text="{h:Loc Key=Menu_Lines}">
@@ -181,6 +182,7 @@
                     <MenuFlyoutSeparator />
                     <ToggleMenuFlyoutItem Text="{h:Loc Key=Cmd_WordWrap}" IsChecked="{x:Bind ViewModel.Settings.WordWrap, Mode=TwoWay}" KeyboardAcceleratorTextOverride="Alt+Z" />
                     <ToggleMenuFlyoutItem Text="{h:Loc Key=Cmd_LineNumbers}" IsChecked="{x:Bind ViewModel.Settings.ShowLineNumbers, Mode=TwoWay}" />
+                    <ToggleMenuFlyoutItem Text="{h:Loc Key=Cmd_Invisibles}" IsChecked="{x:Bind ViewModel.Settings.ShowInvisibles, Mode=TwoWay}" />
                     <ToggleMenuFlyoutItem Text="{h:Loc Key=Cmd_StatusBar}" IsChecked="{x:Bind ViewModel.Settings.ShowStatusBar, Mode=TwoWay}" />
                     <MenuFlyoutSeparator />
                     <MenuFlyoutItem x:Name="ViewEditorMenuItem" Text="{h:Loc Key=Cmd_ViewEditor}" Click="OnViewModeClick" Tag="Editor" IsEnabled="{x:Bind ViewModel.IsMarkdownActive, Mode=OneWay}" />
@@ -348,7 +350,14 @@
                 Background="{ThemeResource LayerFillColorDefaultBrush}"
                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                 BorderThickness="0,1,0,1">
-            <Grid x:Name="DocumentHost" />
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid x:Name="DocumentHost" />
+                <Grid x:Name="GlobalSearchHost" Grid.Row="1" />
+            </Grid>
         </Border>
 
         <!-- Row 3: status bar -->
@@ -363,22 +372,29 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <StackPanel Orientation="Horizontal">
-                <Button Style="{StaticResource StatusBarButtonStyle}"
+                <Button x:Name="PositionButton"
+                        Style="{StaticResource StatusBarButtonStyle}"
                         Command="{x:Bind ViewModel.GoToLineCommand}"
                         Content="{x:Bind h:Ui.Position(ViewModel.ActiveDocument.Line, ViewModel.ActiveDocument.Column), Mode=OneWay}"
                         ToolTipService.ToolTip="{h:Loc Key=Cmd_GoToLine}" />
-                <TextBlock Style="{StaticResource StatusBarTextStyle}" Text="{x:Bind h:Ui.Characters(ViewModel.ActiveDocument.CharacterCount), Mode=OneWay}" />
-                <TextBlock Style="{StaticResource StatusBarTextStyle}" Text="{x:Bind h:Ui.Words(ViewModel.ActiveDocument.WordCount), Mode=OneWay}" />
+                <TextBlock x:Name="CharactersText" Style="{StaticResource StatusBarTextStyle}" Text="{x:Bind h:Ui.Characters(ViewModel.ActiveDocument.CharacterCount), Mode=OneWay}" />
+                <TextBlock x:Name="WordsText" Style="{StaticResource StatusBarTextStyle}" Text="{x:Bind h:Ui.Words(ViewModel.ActiveDocument.WordCount), Mode=OneWay}" />
                 <TextBlock Style="{StaticResource StatusBarTextStyle}"
                            Text="{x:Bind h:Ui.ReadingTime(ViewModel.ActiveDocument.ReadingMinutes), Mode=OneWay}"
                            Visibility="{x:Bind h:Ui.Visible(ViewModel.IsMarkdownActive), Mode=OneWay}" />
             </StackPanel>
             <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <Button x:Name="InsertModeButton"
+                        Style="{StaticResource StatusBarButtonStyle}"
+                        Command="{x:Bind ViewModel.ToggleOverwriteCommand}"
+                        Content="{x:Bind h:Ui.InsertMode(ViewModel.ActiveDocument.IsOverwrite), Mode=OneWay}"
+                        ToolTipService.ToolTip="{h:Loc Key=Status_InsertMode}"
+                        AutomationProperties.HelpText="{h:Loc Key=Status_InsertMode}" />
                 <Button x:Name="ZoomButton"
                         Style="{StaticResource StatusBarButtonStyle}"
                         Content="{x:Bind h:Ui.Percent(ViewModel.ActiveDocument.ZoomPercent), Mode=OneWay}"
                         ToolTipService.ToolTip="{h:Loc Key=Status_Zoom}"
-                        AutomationProperties.Name="{h:Loc Key=Status_Zoom}">
+                        AutomationProperties.HelpText="{h:Loc Key=Status_Zoom}">
                     <Button.Flyout>
                         <MenuFlyout Placement="Top">
                             <MenuFlyoutItem Text="{h:Loc Key=Cmd_ZoomIn}" Command="{x:Bind ViewModel.ZoomInCommand}" KeyboardAcceleratorTextOverride="Ctrl++" />
@@ -387,18 +403,20 @@
                         </MenuFlyout>
                     </Button.Flyout>
                 </Button>
-                <Button Style="{StaticResource StatusBarButtonStyle}"
+                <Button x:Name="LineEndingButton"
+                        Style="{StaticResource StatusBarButtonStyle}"
                         Content="{x:Bind h:Ui.LineEndingName(ViewModel.ActiveDocument.LineEnding), Mode=OneWay}"
                         ToolTipService.ToolTip="{h:Loc Key=Status_LineEnding}"
-                        AutomationProperties.Name="{h:Loc Key=Status_LineEnding}">
+                        AutomationProperties.HelpText="{h:Loc Key=Status_LineEnding}">
                     <Button.Flyout>
                         <MenuFlyout x:Name="LineEndingFlyout" Placement="Top" Opening="OnLineEndingFlyoutOpening" />
                     </Button.Flyout>
                 </Button>
-                <Button Style="{StaticResource StatusBarButtonStyle}"
+                <Button x:Name="EncodingButton"
+                        Style="{StaticResource StatusBarButtonStyle}"
                         Content="{x:Bind h:Ui.EncodingName(ViewModel.ActiveDocument.Encoding), Mode=OneWay}"
                         ToolTipService.ToolTip="{h:Loc Key=Status_Encoding}"
-                        AutomationProperties.Name="{h:Loc Key=Status_Encoding}">
+                        AutomationProperties.HelpText="{h:Loc Key=Status_Encoding}">
                     <Button.Flyout>
                         <MenuFlyout x:Name="EncodingFlyout" Placement="Top" Opening="OnEncodingFlyoutOpening" />
                     </Button.Flyout>

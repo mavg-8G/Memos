@@ -21,6 +21,8 @@ public partial class AppSettings : ObservableObject
     [ObservableProperty] public partial int DefaultZoom { get; set; } = 100;
     [ObservableProperty] public partial bool WordWrap { get; set; } = true;
     [ObservableProperty] public partial bool ShowStatusBar { get; set; } = true;
+    [ObservableProperty] public partial bool ShowInvisibles { get; set; }
+    [ObservableProperty] public partial SyntaxTheme SyntaxTheme { get; set; } = SyntaxTheme.Default;
 
     // Editor
     [ObservableProperty] public partial TextEncodingId DefaultEncoding { get; set; } = TextEncodingId.Utf8;

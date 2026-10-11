@@ -104,7 +104,11 @@ public sealed class FakeClipboard : IClipboardService
 {
     public string? Html { get; private set; }
 
+    public string? Text { get; private set; }
+
     public void SetHtml(string html, string plainText) => Html = html;
+
+    public void SetText(string text) => Text = text;
 }
 
 public sealed class FakePdfExporter : IPdfExporter
@@ -133,8 +137,9 @@ public sealed class TestApp : IDisposable
         Files = new FileService();
         Session = new SessionService(paths);
         Recent = new RecentFilesService(paths);
+        ErrorLog = new ErrorLog(paths);
         Main = new MainViewModel(SettingsService, Files, Recent, Session, Dialogs, Pickers, Clipboard, Pdf,
-            new SearchService(), new MarkdownService(), new FakeLocalizer());
+            new SearchService(), new MarkdownService(), new FakeLocalizer(), ErrorLog);
     }
 
     private readonly bool _ownsTemp;
@@ -150,6 +155,8 @@ public sealed class TestApp : IDisposable
     public SessionService Session { get; }
 
     public RecentFilesService Recent { get; }
+
+    public ErrorLog ErrorLog { get; }
 
     public FakeDialogs Dialogs { get; } = new();
 

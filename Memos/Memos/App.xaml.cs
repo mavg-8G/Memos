@@ -33,6 +33,21 @@ public partial class App : Application
 
         InitializeComponent();
         UnhandledException += OnUnhandledException;
+
+        // Failures outside the UI thread are recorded too.
+        var log = Services.GetRequiredService<IErrorLog>();
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+        {
+            if (e.ExceptionObject is Exception exception)
+            {
+                log.Write(exception, "AppDomain");
+            }
+        };
+        TaskScheduler.UnobservedTaskException += (_, e) =>
+        {
+            log.Write(e.Exception, "Task");
+            e.SetObserved();
+        };
     }
 
     public static new App Current => (App)Application.Current;
@@ -63,6 +78,7 @@ public partial class App : Application
         services.AddSingleton<ISearchService, SearchService>();
         services.AddSingleton<IMarkdownService, MarkdownService>();
         services.AddSingleton<ILocalizer, Localizer>();
+        services.AddSingleton<IErrorLog, ErrorLog>();
 
         // Services that need the window resolve it lazily through WindowContext.
         services.AddSingleton<WindowContext>();
@@ -80,15 +96,8 @@ public partial class App : Application
 
     private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
     {
-        // Keep a local trace for diagnosis; nothing ever leaves the machine.
-        try
-        {
-            var directory = Services.GetRequiredService<IAppPaths>().DataDirectory;
-            Directory.CreateDirectory(directory);
-            File.AppendAllText(Path.Combine(directory, "crash.log"), $"{DateTime.Now:O}\n{e.Exception}\n\n");
-        }
-        catch (Exception ex) when (FileService.IsFileSystemError(ex))
-        {
-        }
+        // Keep a local trace for diagnosis; nothing ever leaves the machine. It can be read,
+        // copied or deleted from Settings.
+        Services.GetRequiredService<IErrorLog>().Write(e.Exception, "UI");
     }
 }

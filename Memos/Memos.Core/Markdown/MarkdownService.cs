@@ -3,6 +3,7 @@ using ColorCode;
 using Markdig;
 using Markdig.Extensions.AutoIdentifiers;
 using Markdig.Extensions.TaskLists;
+using Markdig.Extensions.Yaml;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
@@ -18,12 +19,15 @@ public sealed record HeadingInfo(int Level, string Text, int Line, int Offset, s
 public sealed record MarkdownAnalysis(
     IReadOnlyList<MarkdownBlock> Blocks,
     IReadOnlyList<HeadingInfo> Headings,
-    IReadOnlyList<SyntaxRun> Runs);
+    IReadOnlyList<SyntaxRun> Runs,
+    FrontMatter? FrontMatter = null);
 
+/// <param name="IncludeFrontMatter">Show the YAML front matter as a metadata block (preview) or leave it out (export).</param>
 public sealed record MarkdownRenderOptions(
     bool CodeHighlighting = true,
     string? RelativeUrlBase = null,
-    bool IncludeSyntaxRuns = false);
+    bool IncludeSyntaxRuns = false,
+    bool IncludeFrontMatter = true);
 
 public interface IMarkdownService
 {
@@ -42,6 +46,7 @@ public sealed class MarkdownService : IMarkdownService
         .UseTaskLists()
         .UseAutoLinks()
         .UseFootnotes()
+        .UseYamlFrontMatter()
         .UseEmphasisExtras(Markdig.Extensions.EmphasisExtras.EmphasisExtraOptions.Strikethrough)
         .UseAutoIdentifiers(AutoIdentifierOptions.GitHub)
         .UsePreciseSourceLocation()
@@ -77,9 +82,22 @@ public sealed class MarkdownService : IMarkdownService
 
         var blocks = new List<MarkdownBlock>(document.Count);
         var builder = writer.GetStringBuilder();
+        FrontMatter? frontMatter = null;
         foreach (var block in document)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            if (block is YamlFrontMatterBlock yaml)
+            {
+                // Metadata, not content: shown as its own block and never rendered as Markdown.
+                frontMatter = FrontMatter.Parse(yaml.Lines.ToString());
+                if (options.IncludeFrontMatter)
+                {
+                    blocks.Add(new MarkdownBlock(frontMatter.ToHtml(), block.Line));
+                }
+
+                continue;
+            }
+
             builder.Clear();
             renderer.Write(block);
             writer.Flush();
@@ -89,7 +107,7 @@ public sealed class MarkdownService : IMarkdownService
             }
         }
 
-        return new MarkdownAnalysis(blocks, headings, painter?.ToRuns() ?? []);
+        return new MarkdownAnalysis(blocks, headings, painter?.ToRuns() ?? [], frontMatter);
     }
 
     /// <summary>
@@ -155,6 +173,9 @@ public sealed class MarkdownService : IMarkdownService
                 break;
             case QuoteBlock quote:
                 painter?.Paint(quote.Span, SyntaxColor.Quote, SyntaxFlags.None);
+                break;
+            case YamlFrontMatterBlock frontMatterBlock:
+                painter?.Paint(frontMatterBlock.Span, SyntaxColor.Meta, SyntaxFlags.None);
                 break;
             case CodeBlock code:
                 painter?.Paint(code.Span, SyntaxColor.Code, SyntaxFlags.None);

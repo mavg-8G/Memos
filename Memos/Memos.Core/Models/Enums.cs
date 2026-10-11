@@ -65,6 +65,14 @@ public enum SaveChangesChoice
     Cancel,
 }
 
+/// <summary>Colours used to highlight Markdown syntax in the editor.</summary>
+public enum SyntaxTheme
+{
+    Default,
+    Accent,
+    Monochrome,
+}
+
 public enum ExportFormat
 {
     Html,

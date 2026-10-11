@@ -9,6 +9,7 @@ La solución separa la lógica de la interfaz en dos ensamblados:
 | `Memos.Core` (`net10.0`) | Modelos, servicios, operaciones de texto, Markdown y **ViewModels**. No referencia WinUI. | CommunityToolkit.Mvvm, Markdig, ColorCode |
 | `Memos` (`net10.0-windows`) | Vistas XAML, servicios que necesitan la ventana (diálogos, selectores, tema, WebView2), recursos. | `Memos.Core`, Windows App SDK |
 | `Memos.Tests` | Pruebas xUnit sobre `Memos.Core` con dobles de los servicios de interfaz. | `Memos.Core` |
+| `Memos.UITests` | Pruebas de extremo a extremo sobre el ejecutable real, por UI Automation. | — |
 | `Memos (Package)` | Empaquetado MSIX. | `Memos` |
 
 Como los ViewModels viven en `Memos.Core` y hablan con la interfaz solo a través de interfaces (`IDialogService`, `IFilePickerService`, `IEditorSurface`, `IPdfExporter`…), flujos como «cerrar con cambios pendientes» o «recuperar sesión» se prueban sin abrir ninguna ventana.
@@ -52,6 +53,12 @@ El historial es propio (el del control está desactivado) por una razón concret
 - canal de números de línea dibujado aparte, posicionado con `ITextRange.GetRect` (búsqueda binaria de la primera línea visible, así el coste no depende del tamaño del documento);
 - `ApplySyntaxRuns` y `ApplySearchHighlights` solo tocan formato, nunca texto.
 
+**Lo que el control no ofrece y se añade encima.**
+
+- *Caracteres invisibles*: `UpdateInvisibles` recorre solo las líneas visibles, pide al control el rectángulo de cada tramo de espacios, cada tabulación y cada fin de línea, y lo dibuja todo como una única geometría (`Path`) en una capa transparente sobre el texto. Hay un tope de mediciones por pasada y las actualizaciones se agrupan por ráfaga.
+- *Inserción/sobrescritura*: la tecla Insert no llega al control. El modo es una propiedad del documento (`IsOverwrite`); al confirmar texto tecleado, `DocumentViewModel` elimina tantos grafemas a la derecha como se escribieron, sin pasar del fin de línea, dentro del mismo paso de deshacer (`UndoHistory.ExtendLastRemoved`). Los comandos (pegar, etc.) siempre insertan.
+- *Colores*: `SyntaxPalette` da los colores de cada tema (predeterminado, acento de Windows, monocromo) en claro y oscuro. El de acento usa los tonos oscuros del acento sobre fondo claro y los claros sobre fondo oscuro, y se reaplica cuando Windows avisa de un cambio de color.
+
 **Por qué RichEditBox.** Es el control nativo de WinUI 3 para texto editable de varias líneas y el que da de serie lo que la especificación exige: IME para chino, japonés y coreano, texto bidireccional, emojis en color, selección y accesibilidad (UI Automation). Las alternativas se descartaron: `TextBox` no permite resaltado; los editores dibujados a mano con Win2D pierden IME, bidi y accesibilidad; un editor web en WebView2 contradice el objetivo de aplicación nativa.
 
 **Su coste.** No virtualiza la maquetación: al cargar calcula la altura de todo el documento, y lo hace bastante más despacio cuando abundan los caracteres no ASCII. De ahí los límites de `FileLimits` (aviso a 2 MB, máximo 10 MB) y las mediciones del README. Tampoco expone caracteres invisibles ni el modo de sobrescritura.
@@ -63,6 +70,8 @@ El historial es propio (el del control está desactivado) por una razón concret
 - **Bloques**: cada bloque de primer nivel renderizado a HTML con su línea de origen.
 - **Encabezados**: para la tabla de contenidos.
 - **Tramos de sintaxis** (`SyntaxRun`): estilos sin solapamiento para el editor, obtenidos pintando el árbol de padres a hijos.
+
+- **Front matter**: el bloque YAML inicial (extensión `UseYamlFrontMatter` de Markdig) se aparta del cuerpo. `FrontMatter.Parse` extrae los pares de primer nivel para mostrarlos como tabla en la vista previa; la exportación lo omite y usa su `title`.
 
 El análisis corre en segundo plano con retardo; cada edición cancela el anterior (`Debouncer`).
 
@@ -96,6 +105,7 @@ Archivos JSON en `%LOCALAPPDATA%\Memos` (en el paquete MSIX, Windows los redirig
 
 - `settings.json` — `AppSettings` es un `ObservableObject`; `JsonSettingsService` guarda con retardo tras cada cambio y las vistas reaccionan a `PropertyChanged`.
 - `recent.json` — archivos recientes.
+- `crash.log` — registro de errores inesperados (`ErrorLog`): hilo de interfaz, `AppDomain` y tareas sin observar. Se reinicia al pasar de 512 KB y se gestiona desde Configuración.
 - `Session/` — `session.json` más una copia `.bak` por documento con cambios sin guardar. Solo se reescriben las copias cuyo texto cambió.
 
 La serialización usa generadores de código de `System.Text.Json` (sin reflexión).
@@ -117,7 +127,16 @@ Se resuelven en `MainWindow.OnPreviewKeyDown`, mientras el evento baja desde la 
 ## Pruebas
 
 - **Unitarias** (`Memos.Tests`): servicios y funciones puras con archivos temporales reales, y ViewModels con dobles de diálogos y selectores.
-- **No automatizadas**: las vistas, el RichEditBox y el WebView2 (incluida la impresión a PDF, cuya parte de generación de HTML sí está cubierta).
+- **De interfaz** (`Memos.UITests`): `MemosApp` arranca el ejecutable sin empaquetar con una carpeta de datos propia (`MEMOS_DATA_DIR`, que además aísla la instancia única), localiza elementos por su `AutomationId` (el `x:Name` del XAML), invoca menús y botones con patrones de UI Automation y envía el teclado directamente a la ventana de entrada de WinUI, sin depender de que esté en primer plano. Las comprobaciones se hacen sobre la barra de estado y sobre los archivos en disco.
+- **No automatizadas**: el contenido de la vista previa y la impresión a PDF (su generación de HTML sí está cubierta), arrastrar y soltar y los atajos con modificadores.
+
+## Búsqueda en todas las pestañas
+
+`GlobalSearchViewModel` recorre los documentos abiertos con el mismo `ISearchService` que la búsqueda local, en segundo plano, y publica resultados (pestaña, línea, vista previa de la línea). El reemplazo global calcula primero los cambios, pide confirmación con el total y aplica un `TextEdit` por documento, de modo que cada pestaña lo deshace por separado; un documento editado mientras el diálogo estaba abierto se omite.
+
+## Marca
+
+`tools/New-BrandAssets.ps1` dibuja el icono con primitivas vectoriales (GDI+) a cuatro veces el tamaño y lo reduce, con un dibujo simplificado por debajo de 24 px. De ahí salen el `.ico` y todas las imágenes del paquete, así que cambiar la marca es cambiar un script.
 
 ## Cómo extender
 

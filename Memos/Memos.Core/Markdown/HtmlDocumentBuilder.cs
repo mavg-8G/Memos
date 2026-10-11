@@ -164,6 +164,10 @@ public static class HtmlDocumentBuilder
         del{color:var(--muted)} mark{background:var(--mark);color:inherit}
         .footnotes{font-size:.875em;color:var(--muted)} .footnotes hr{margin:2em 0 1em}
         sup{line-height:0}
+        .front-matter{display:table;width:auto;margin:0 0 1.5em;font-size:.85em;color:var(--muted);border-collapse:collapse}
+        .front-matter th,.front-matter td{padding:3px 12px;border:1px solid var(--border);background:none;text-align:left;vertical-align:top}
+        .front-matter th{font-weight:600;white-space:nowrap}
+        pre.front-matter{display:block;padding:10px 14px;border:1px solid var(--border);background:none}
         @media print{main{max-width:none;padding:0} pre{white-space:pre-wrap} a{color:inherit}}
 
         """;

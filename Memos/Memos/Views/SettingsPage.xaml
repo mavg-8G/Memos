@@ -77,6 +77,9 @@
                 <views:SettingCard Header="{h:Loc Key=Cmd_LineNumbers}">
                     <ToggleSwitch IsOn="{x:Bind Settings.ShowLineNumbers, Mode=TwoWay}" />
                 </views:SettingCard>
+                <views:SettingCard Header="{h:Loc Key=Cmd_Invisibles}" Description="{h:Loc Key=Set_Invisibles_Desc}">
+                    <ToggleSwitch x:Name="InvisiblesSwitch" IsOn="{x:Bind Settings.ShowInvisibles, Mode=TwoWay}" />
+                </views:SettingCard>
                 <views:SettingCard Header="{h:Loc Key=Set_AutoIndent}" Description="{h:Loc Key=Set_AutoIndent_Desc}">
                     <ToggleSwitch IsOn="{x:Bind Settings.AutoIndent, Mode=TwoWay}" />
                 </views:SettingCard>
@@ -103,6 +106,9 @@
                 </views:SettingCard>
                 <views:SettingCard Header="{h:Loc Key=Set_SyntaxHighlighting}" Description="{h:Loc Key=Set_SyntaxHighlighting_Desc}">
                     <ToggleSwitch IsOn="{x:Bind Settings.MarkdownSyntaxHighlighting, Mode=TwoWay}" />
+                </views:SettingCard>
+                <views:SettingCard Header="{h:Loc Key=Set_SyntaxTheme}" Description="{h:Loc Key=Set_SyntaxTheme_Desc}">
+                    <ComboBox x:Name="SyntaxThemeCombo" MinWidth="200" />
                 </views:SettingCard>
                 <views:SettingCard Header="{h:Loc Key=Set_RemoteImages}" Description="{h:Loc Key=Set_RemoteImages_Desc}">
                     <ToggleSwitch IsOn="{x:Bind Settings.AllowRemoteImages, Mode=TwoWay}" />
@@ -139,6 +145,13 @@
                 <TextBlock Style="{StaticResource SettingsSectionHeaderStyle}" Text="{h:Loc Key=Settings_About}" />
                 <views:SettingCard x:Name="AboutCard" Header="Memos" Description="{h:Loc Key=About_Privacy}">
                     <TextBlock x:Name="VersionText" Foreground="{ThemeResource TextFillColorSecondaryBrush}" IsTextSelectionEnabled="True" />
+                </views:SettingCard>
+                <views:SettingCard x:Name="ErrorLogCard" Header="{h:Loc Key=ErrorLog_Title}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Name="ErrorLogOpenButton" Content="{h:Loc Key=ErrorLog_Open}" Command="{x:Bind ViewModel.OpenErrorLogCommand}" IsEnabled="{x:Bind ViewModel.HasErrorLog, Mode=OneWay}" />
+                        <Button x:Name="ErrorLogCopyButton" Content="{h:Loc Key=ErrorLog_Copy}" Command="{x:Bind ViewModel.CopyErrorLogCommand}" IsEnabled="{x:Bind ViewModel.HasErrorLog, Mode=OneWay}" />
+                        <Button x:Name="ErrorLogClearButton" Content="{h:Loc Key=ErrorLog_Clear}" Command="{x:Bind ViewModel.ClearErrorLogCommand}" IsEnabled="{x:Bind ViewModel.HasErrorLog, Mode=OneWay}" />
+                    </StackPanel>
                 </views:SettingCard>
             </StackPanel>
         </ScrollViewer>

@@ -114,6 +114,9 @@ public partial class DocumentViewModel : ObservableObject, IDisposable
     [ObservableProperty] public partial bool CanUndo { get; private set; }
     [ObservableProperty] public partial bool CanRedo { get; private set; }
 
+    /// <summary>Overwrite mode: typed characters replace the ones under the caret (Insert key).</summary>
+    [ObservableProperty] public partial bool IsOverwrite { get; set; }
+
     /// <summary>Raised after the text changes, whatever the origin.</summary>
     public event EventHandler? TextChanged;
 
@@ -457,6 +460,7 @@ public partial class DocumentViewModel : ObservableObject, IDisposable
         }
 
         var change = TextDiff.Compute(Text, newText);
+        var overwriteLength = GetOverwriteLength(newText, change);
         if (!_navigatingHistory)
         {
             _history.Record(change.Start, Text.Substring(change.Start, change.RemovedLength), newText.Substring(change.Start, change.InsertedLength), allowMerge: !_applyingCommand);
@@ -481,6 +485,66 @@ public partial class DocumentViewModel : ObservableObject, IDisposable
 
         Find.OnDocumentTextChanged();
         TextChanged?.Invoke(this, EventArgs.Empty);
+
+        if (overwriteLength > 0)
+        {
+            Overwrite(change.Start + change.InsertedLength, overwriteLength);
+        }
+    }
+
+    /// <summary>
+    /// In overwrite mode, how many characters after freshly typed text must go: as many
+    /// user-perceived characters as were typed, never past the end of the line.
+    /// </summary>
+    private int GetOverwriteLength(string newText, TextChange change)
+    {
+        if (!IsOverwrite || _navigatingHistory || _applyingCommand || change.RemovedLength != 0 || change.InsertedLength == 0)
+        {
+            return 0;
+        }
+
+        var typed = newText.AsSpan(change.Start, change.InsertedLength);
+        if (typed.Contains('\n'))
+        {
+            return 0;
+        }
+
+        var rest = newText.AsSpan(change.Start + change.InsertedLength);
+        var length = 0;
+        while (!typed.IsEmpty && length < rest.Length && rest[length] != '\n')
+        {
+            typed = typed[System.Globalization.StringInfo.GetNextTextElementLength(typed)..];
+            length += System.Globalization.StringInfo.GetNextTextElementLength(rest[length..]);
+        }
+
+        return length;
+    }
+
+    /// <summary>Removes the overwritten characters as part of the undo step that typed over them.</summary>
+    private void Overwrite(int start, int length)
+    {
+        var removed = Text.Substring(start, length);
+        var edit = new TextEdit(start, length, "", start, 0);
+        _navigatingHistory = true;
+        try
+        {
+            if (Editor is not null)
+            {
+                Editor.ApplyEdit(edit);
+            }
+            else
+            {
+                CommitText(edit.Apply(Text));
+                SetSelection(start, 0);
+            }
+        }
+        finally
+        {
+            _navigatingHistory = false;
+        }
+
+        _history.ExtendLastRemoved(removed);
+        UpdateHistoryState();
     }
 
     /// <summary>Combines a new change with the ones not yet analysed into one region of old and new text.</summary>

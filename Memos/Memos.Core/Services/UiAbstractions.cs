@@ -40,6 +40,8 @@ public interface IClipboardService
 {
     /// <summary>Puts HTML on the clipboard together with a plain-text version.</summary>
     void SetHtml(string html, string plainText);
+
+    void SetText(string text);
 }
 
 public interface IPdfExporter

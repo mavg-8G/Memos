@@ -25,6 +25,20 @@
                 IsHitTestVisible="False"
                 AutomationProperties.AccessibilityView="Raw" />
 
+        <!-- Marks for spaces, tabs and line ends, painted over the text when the option is on. -->
+        <Canvas x:Name="Invisibles"
+                Grid.Column="1"
+                Canvas.ZIndex="1"
+                IsHitTestVisible="False"
+                AutomationProperties.AccessibilityView="Raw">
+            <Path x:Name="InvisiblesPath"
+                  Stroke="{ThemeResource TextFillColorTertiaryBrush}"
+                  StrokeThickness="1.4"
+                  StrokeStartLineCap="Round"
+                  StrokeEndLineCap="Round"
+                  StrokeLineJoin="Round" />
+        </Canvas>
+
         <RichEditBox x:Name="Box"
                      Grid.Column="1"
                      AutomationProperties.Name="{h:Loc Key=Editor_Name}"
