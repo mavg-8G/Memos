@@ -43,15 +43,25 @@ Toda modificación recorre el mismo camino:
 
 `UndoHistory` guarda reemplazos (posición, texto quitado, texto insertado). La escritura consecutiva se fusiona por palabras, los borrados consecutivos también, y los comandos son siempre un paso propio. El estado «modificado» sale de comparar el paso actual con el paso guardado, así que deshacer hasta el punto de guardado limpia el indicador.
 
-El historial es propio (el del control está desactivado) por una razón concreta: el resaltado de sintaxis y el de búsqueda se aplican como formato de caracteres en el RichEditBox, y con el historial nativo cada recoloreado sería un paso de «deshacer».
+En texto plano y Markdown el historial es propio (el del control está desactivado) por una razón concreta: el resaltado de sintaxis y el de búsqueda se aplican como formato de caracteres en el RichEditBox, y con el historial nativo cada recoloreado sería un paso de «deshacer». Los documentos RTF usan el historial nativo para conservar los cambios de formato.
 
 ## El control de edición
 
-`EditorControl` envuelve un `RichEditBox` usado como editor de texto plano:
+`EditorControl` envuelve un `RichEditBox`. En texto plano y Markdown:
 
 - pegado siempre como texto plano, copia en texto plano, atajos de formato enriquecido bloqueados;
 - canal de números de línea dibujado aparte, posicionado con `ITextRange.GetRect` (búsqueda binaria de la primera línea visible, así el coste no depende del tamaño del documento);
 - `ApplySyntaxRuns` y `ApplySearchHighlights` solo tocan formato, nunca texto.
+
+En RTF el control carga y guarda el flujo RTF, admite pegar con formato y usa el historial nativo (de él salen «deshacer» y «rehacer»). El ViewModel conserva el RTF junto con el texto visible para búsqueda y estadísticas. El guardado de sesión conserva el flujo RTF. Tres detalles que no son evidentes:
+
+- El control reescribe el RTF a su manera. Lo que devuelve justo después de cargar pasa a ser la referencia de «sin cambios» (`OnEditorRichTextLoaded`); si no, todo archivo parecería modificado al abrirlo.
+- Al entrar en la ventana, el RichEditBox aplica su propia fuente a todo lo que contiene. Por eso el RTF se carga después de `Loaded`, y en estos documentos no se fijan fuente ni tamaño del control (tampoco el zoom).
+- El color «automático» del RTF es negro. El editor RTF fuerza el tema claro sobre fondo blanco para que el texto se lea con el tema oscuro y para que ningún color del tema acabe escrito en el archivo.
+
+Sin control (pestañas aún no mostradas, pruebas), `RichTextCodec` lee del RTF el texto y los cuatro estilos; es también lo que usa la impresión (`RichTextPrintHtml`).
+
+**Imprimir.** `WebViewPdfExporter.PrintAsync` abre una ventana propia, hija de la principal, con un WebView2 que carga la página y ejecuta `window.print()`. Esa llamada no vuelve hasta que la vista previa se cierra, y entonces se cierra la ventana y se borra la página temporal.
 
 **Lo que el control no ofrece y se añade encima.**
 

@@ -123,6 +123,110 @@ public sealed class FakePdfExporter : IPdfExporter
         OutputPath = outputPath;
         return Task.CompletedTask;
     }
+
+    public string? PrintTitle { get; private set; }
+
+    public Exception? PrintError { get; set; }
+
+    public Task PrintAsync(string html, string? baseDirectory, string title)
+    {
+        if (PrintError is not null)
+        {
+            return Task.FromException(PrintError);
+        }
+
+        Html = html;
+        PrintTitle = title;
+        return Task.CompletedTask;
+    }
+}
+
+/// <summary>
+/// Stands in for the editing control of a rich-text document. Like the real one, it rewrites the
+/// RTF it is given in its own way and keeps the undo history to itself.
+/// </summary>
+public sealed class FakeRichEditor : IRichEditorSurface
+{
+    private readonly DocumentViewModel _document;
+
+    public FakeRichEditor(DocumentViewModel document)
+    {
+        _document = document;
+        document.Editor = this;
+        LoadRichText(document.RichText);
+    }
+
+    /// <summary>How the control would write the same document.</summary>
+    public static string Normalize(string rtf) => rtf.Replace(@"{\rtf1", @"{\rtf1\fbidis").TrimEnd() + "\r\n";
+
+    public string Rtf { get; private set; } = "";
+
+    public List<RichStyle> Toggled { get; } = [];
+
+    public int Undos { get; private set; }
+
+    public int Redos { get; private set; }
+
+    public bool CanUndoRich { get; set; }
+
+    public bool CanRedoRich { get; set; }
+
+    public void LoadRichText(string rtf)
+    {
+        Rtf = Normalize(rtf);
+        _document.OnEditorRichTextLoaded(Memos.Core.Helpers.RichTextCodec.ToPlainText(rtf), Rtf);
+    }
+
+    /// <summary>The user changed the document: new content, new formatting, or both.</summary>
+    public void Edit(string rtf)
+    {
+        Rtf = Normalize(rtf);
+        CanUndoRich = true;
+        CanRedoRich = false;
+        _document.OnEditorRichTextChanged(Memos.Core.Helpers.RichTextCodec.ToPlainText(rtf), Rtf);
+    }
+
+    public void ToggleRichStyle(RichStyle style) => Toggled.Add(style);
+
+    public void UndoRich()
+    {
+        Undos++;
+        CanUndoRich = false;
+        CanRedoRich = true;
+    }
+
+    public void RedoRich()
+    {
+        Redos++;
+        CanUndoRich = true;
+        CanRedoRich = false;
+    }
+
+    public void ApplyEdit(TextEdit edit) => Edit(Memos.Core.Helpers.RichTextCodec.FromPlainText(edit.Apply(_document.Text)));
+
+    public void Select(int start, int length)
+    {
+    }
+
+    public void Focus()
+    {
+    }
+
+    public void Cut()
+    {
+    }
+
+    public void Copy()
+    {
+    }
+
+    public void Paste()
+    {
+    }
+
+    public void SelectAll()
+    {
+    }
 }
 
 /// <summary>A complete view-model graph over real services and a temporary data folder.</summary>

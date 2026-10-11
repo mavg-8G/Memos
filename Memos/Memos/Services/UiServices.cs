@@ -186,14 +186,16 @@ public sealed class FilePickerService(WindowContext context, ILocalizer loc) : I
 {
     private static readonly string[] TextExtensions = [".txt", ".log", ".csv", ".tsv", ".json", ".xml", ".yaml", ".yml", ".ini", ".cfg", ".conf"];
     private static readonly string[] MarkdownExtensions = [".md", ".markdown"];
+    private static readonly string[] RichTextExtensions = [".rtf"];
     private static readonly string[] ImageExtensions = [".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg"];
 
     public async Task<IReadOnlyList<string>> PickOpenFilesAsync()
     {
         var picker = new FileOpenPicker(context.WindowId) { SuggestedStartLocation = PickerLocationId.DocumentsLibrary };
-        picker.FileTypeChoices.Add(loc.Get("Filter_Supported"), [.. TextExtensions, .. MarkdownExtensions]);
+        picker.FileTypeChoices.Add(loc.Get("Filter_Supported"), [.. TextExtensions, .. MarkdownExtensions, .. RichTextExtensions]);
         picker.FileTypeChoices.Add(loc.Get("Filter_Text"), [.. TextExtensions]);
         picker.FileTypeChoices.Add(loc.Get("Filter_Markdown"), [.. MarkdownExtensions]);
+        picker.FileTypeChoices.Add(loc.Get("Filter_RichText"), [.. RichTextExtensions]);
         picker.FileTypeChoices.Add(loc.Get("Filter_All"), ["*"]);
 
         var files = await picker.PickMultipleFilesAsync();
@@ -205,12 +207,16 @@ public sealed class FilePickerService(WindowContext context, ILocalizer loc) : I
         var picker = new FileSavePicker(context.WindowId)
         {
             SuggestedFileName = suggestedName,
-            DefaultFileExtension = kind == DocumentKind.Markdown ? ".md" : ".txt",
+            DefaultFileExtension = kind switch { DocumentKind.Markdown => ".md", DocumentKind.RichText => ".rtf", _ => ".txt" },
         };
         SetFolder(folder => picker.SuggestedFolder = folder, suggestedFolder);
 
         // The first choice is preselected, so it is the one that matches the workspace.
-        if (kind == DocumentKind.Markdown)
+        if (kind == DocumentKind.RichText)
+        {
+            picker.FileTypeChoices.Add(loc.Get("Filter_RichText"), [.. RichTextExtensions]);
+        }
+        else if (kind == DocumentKind.Markdown)
         {
             picker.FileTypeChoices.Add(loc.Get("Filter_Markdown"), [.. MarkdownExtensions]);
             picker.FileTypeChoices.Add(loc.Get("Filter_Text"), [.. TextExtensions]);

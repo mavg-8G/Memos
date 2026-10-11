@@ -267,7 +267,7 @@ public sealed partial class MainWindow : Window
         Title = $"{document.DisplayName} - Memos";
 
         _syncingSelection = true;
-        WorkspaceSelector.SelectedItem = document.IsMarkdown ? MarkdownWorkspaceItem : TextWorkspaceItem;
+        WorkspaceSelector.SelectedItem = document.IsRichText ? RichTextWorkspaceItem : document.IsMarkdown ? MarkdownWorkspaceItem : TextWorkspaceItem;
         _syncingSelection = false;
 
         ViewEditorButton.IsChecked = document.ViewMode == MarkdownViewMode.Editor;
@@ -472,8 +472,10 @@ public sealed partial class MainWindow : Window
     {
         if (!_syncingSelection)
         {
-            var kind = ReferenceEquals(sender.SelectedItem, MarkdownWorkspaceItem) ? DocumentKind.Markdown : DocumentKind.Text;
+            var kind = ReferenceEquals(sender.SelectedItem, RichTextWorkspaceItem) ? DocumentKind.RichText
+                : ReferenceEquals(sender.SelectedItem, MarkdownWorkspaceItem) ? DocumentKind.Markdown : DocumentKind.Text;
             ViewModel.SetKindCommand.Execute(kind);
+            UpdateDocumentChrome();
         }
     }
 
@@ -589,7 +591,9 @@ public sealed partial class MainWindow : Window
         {
             (true, false, false, VirtualKey.N) => ViewModel.NewTextCommand,
             (true, true, false, VirtualKey.N) => ViewModel.NewMarkdownCommand,
+            (true, false, true, VirtualKey.N) => ViewModel.NewRichTextCommand,
             (true, false, false, VirtualKey.O) => ViewModel.OpenCommand,
+            (true, false, false, VirtualKey.P) => ViewModel.PrintCommand,
             (true, false, false, VirtualKey.S) => ViewModel.SaveCommand,
             (true, true, false, VirtualKey.S) => ViewModel.SaveAsCommand,
             (true, false, true, VirtualKey.S) => ViewModel.SaveAllCommand,
@@ -614,6 +618,7 @@ public sealed partial class MainWindow : Window
             (false, false, true, VirtualKey.Up) when inEditor => ViewModel.MoveLineUpCommand,
             (false, false, true, VirtualKey.Down) when inEditor => ViewModel.MoveLineDownCommand,
             (true, true, false, VirtualKey.U) when inEditor => ViewModel.UppercaseCommand,
+            (true, false, false, VirtualKey.U) when inEditor && ViewModel.IsRichTextActive => ViewModel.UnderlineCommand,
             (true, false, false, VirtualKey.U) when inEditor => ViewModel.LowercaseCommand,
             (true, false, false, (VirtualKey)221) when inEditor => ViewModel.IndentCommand,  // Ctrl+]
             (true, false, false, (VirtualKey)219) when inEditor => ViewModel.OutdentCommand, // Ctrl+[

@@ -267,6 +267,110 @@ public class WindowTests
         MemosApp.Eventually(() => !File.Exists(logPath), "the log file to be deleted");
     }
 
+    private const string SampleRtf =
+        @"{\rtf1\ansi\ansicpg1252\deff0{\fonttbl{\f0 Times New Roman;}}\f0\fs28 \b negrita\b0  normal\par}";
+
+    [Theory]
+    [InlineData("Light")]
+    [InlineData("Dark")]
+    public void An_rtf_file_opens_as_rich_text_and_is_not_modified_by_being_shown(string theme)
+    {
+        using var app = MemosApp.Launch(
+            docs => [MemosApp.WriteDoc(docs, "carta.rtf", SampleRtf)],
+            $$"""{ "Language": "en-US", "Theme": "{{theme}}" }""");
+
+        Assert.Equal(["carta.rtf"], app.TabNames());
+        WaitForText(app, "CharactersText", "14 characters");
+        WaitForText(app, "WordsText", "2 words");
+
+        // Encoding, line ending and zoom belong to plain text; a rich document has its own formatting tools.
+        MemosApp.Eventually(() => app.TryFind("EncodingButton") is null && app.TryFind("ZoomButton") is null, "the plain-text status buttons to hide");
+        Assert.NotNull(app.FindByName("Format", ControlType.MenuItem));
+        Thread.Sleep(1000);
+
+        // Nothing was edited, so closing must not ask and the file must be byte for byte the same.
+        app.RequestClose();
+        Assert.True(app.WaitForExit(TimeSpan.FromSeconds(15)), "An untouched RTF file should close without asking to save.");
+        Assert.Equal(SampleRtf, File.ReadAllText(app.Doc("carta.rtf")));
+    }
+
+    [Fact]
+    public void Editing_rich_text_keeps_its_fonts_and_styles_and_tab_undo_and_redo_work()
+    {
+        using var app = MemosApp.Launch(docs => [MemosApp.WriteDoc(docs, "carta.rtf", SampleRtf)]);
+        WaitForText(app, "CharactersText", "14 characters");
+
+        // Tab types a tab instead of moving the focus out of the editor.
+        app.Press(VkTab);
+        WaitForText(app, "CharactersText", "15 characters");
+        app.Type("x");
+        WaitForText(app, "CharactersText", "16 characters");
+
+        app.Menu("Edit", "Undo");
+        MemosApp.Eventually(() => app.Text("CharactersText") != "16 characters", "undo to take the typing back");
+        app.Menu("Edit", "Redo");
+        WaitForText(app, "CharactersText", "16 characters");
+
+        app.Menu("Format", "Underline");
+        app.Menu("File", "Save");
+
+        var path = app.Doc("carta.rtf");
+        MemosApp.Eventually(() => File.ReadAllText(path).Contains(@"\tab"), "the document to be saved");
+        var saved = File.ReadAllText(path);
+        Assert.StartsWith(@"{\rtf1", saved);
+        Assert.Contains("Times New Roman", saved);
+        Assert.Contains(@"negrita\b0", saved);
+        Assert.DoesNotContain("Cascadia", saved);
+        Assert.DoesNotContain('\0', saved);
+        Assert.Single(Directory.GetFiles(Path.GetDirectoryName(path)!));
+
+        // Saved means saved: closing does not ask again.
+        app.RequestClose();
+        Assert.True(app.WaitForExit(TimeSpan.FromSeconds(15)));
+    }
+
+    [Fact]
+    public void A_new_rich_document_can_be_formatted_and_asks_before_closing()
+    {
+        using var app = MemosApp.Launch();
+
+        app.Menu("File", "New rich text document (RTF)");
+        MemosApp.Eventually(() => app.TabNames().Length == 2 && app.TryFind("EncodingButton") is null, "the rich document to open in a new tab");
+
+        app.Menu("Format", "Bold");
+        app.Type("hola");
+        WaitForText(app, "CharactersText", "4 characters");
+
+        app.RequestClose();
+        MemosApp.Invoke(app.FindByName("Don't save", ControlType.Button));
+        Assert.True(app.WaitForExit(TimeSpan.FromSeconds(15)));
+    }
+
+    [Theory]
+    [InlineData("nota.txt", "uno\r\ndos")]
+    [InlineData("nota.md", "# Título\n\ntexto")]
+    [InlineData("nota.rtf", SampleRtf)]
+    public void Print_opens_a_preview_window_and_closing_it_leaves_nothing_behind(string name, string content)
+    {
+        using var app = MemosApp.Launch(docs => [MemosApp.WriteDoc(docs, name, content)]);
+        var temp = Path.Combine(app.DataDirectory, "Temp");
+
+        for (var round = 0; round < 2; round++)
+        {
+            app.Menu("File", "Print…");
+            MemosApp.Eventually(() => app.OtherWindows().Length == 1, "the print preview window to open");
+            MemosApp.Eventually(() => Directory.GetFiles(temp, "print-*.html").Length == 1, "the page to print to be prepared");
+            Thread.Sleep(2500);
+
+            MemosApp.CloseWindow(app.OtherWindows()[0]);
+            MemosApp.Eventually(() => app.OtherWindows().Length == 0, "the print preview window to close");
+            MemosApp.Eventually(() => Directory.GetFiles(temp, "print-*.html").Length == 0, "the temporary page to be deleted");
+        }
+
+        Assert.False(app.HasExited);
+        Assert.Equal(content, File.ReadAllText(app.Doc(name)));
+    }
+
     [Fact]
     public void Showing_invisible_characters_and_changing_theme_keep_the_editor_working()
     {

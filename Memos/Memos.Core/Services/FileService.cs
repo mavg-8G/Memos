@@ -12,8 +12,12 @@ public interface IFileService
     /// <summary>Reads a text file. With <paramref name="forcedEncoding"/> the detection is skipped.</summary>
     Task<LoadedText> LoadAsync(string path, TextEncodingId? forcedEncoding = null, CancellationToken cancellationToken = default);
 
+    Task<LoadedRichText> LoadRichTextAsync(string path, CancellationToken cancellationToken = default);
+
     /// <summary>Writes '\n'-separated text with the given encoding and line ending, replacing the file atomically when possible.</summary>
     Task<FileStamp> SaveAsync(string path, string text, TextEncodingId encoding, LineEnding lineEnding, CancellationToken cancellationToken = default);
+
+    Task<FileStamp> SaveRichTextAsync(string path, string rtf, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Limits that keep the editing control responsive and its behaviour predictable.</summary>
@@ -100,6 +104,26 @@ public sealed class FileService : IFileService
 
     public async Task<FileStamp> SaveAsync(string path, string text, TextEncodingId encoding, LineEnding lineEnding, CancellationToken cancellationToken = default)
     {
+        var bytes = await Task.Run(() => TextEncodings.Encode(LineEndings.Apply(text, lineEnding), encoding), cancellationToken).ConfigureAwait(false);
+        return await SaveBytesAsync(path, bytes, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<LoadedRichText> LoadRichTextAsync(string path, CancellationToken cancellationToken = default)
+    {
+        path = Path.GetFullPath(path);
+        var info = new FileInfo(path);
+        if (!info.Exists) throw new FileNotFoundException(null, path);
+        if (info.Length > FileLimits.MaxBytes) throw new FileTooLargeException(path, info.Length);
+        var bytes = await File.ReadAllBytesAsync(path, cancellationToken).ConfigureAwait(false);
+        if (!bytes.AsSpan().StartsWith("{\\rtf"u8)) throw new IOException("The file is not an RTF document.");
+        return new LoadedRichText(System.Text.Encoding.Latin1.GetString(bytes), GetStamp(path) ?? default);
+    }
+
+    public Task<FileStamp> SaveRichTextAsync(string path, string rtf, CancellationToken cancellationToken = default) =>
+        SaveBytesAsync(path, System.Text.Encoding.Latin1.GetBytes(Helpers.RichTextCodec.EscapeNonLatin(rtf)), cancellationToken);
+
+    private async Task<FileStamp> SaveBytesAsync(string path, byte[] bytes, CancellationToken cancellationToken)
+    {
         path = Path.GetFullPath(path);
         var directory = Path.GetDirectoryName(path) ?? throw new IOException($"Invalid path: {path}");
         if (!Directory.Exists(directory))
@@ -112,8 +136,6 @@ public sealed class FileService : IFileService
         {
             throw new ReadOnlyFileException(path);
         }
-
-        var bytes = await Task.Run(() => TextEncodings.Encode(LineEndings.Apply(text, lineEnding), encoding), cancellationToken).ConfigureAwait(false);
 
         // Write next to the target and swap, so a crash or a full disk never leaves a half-written file.
         var temp = Path.Combine(directory, $".{Path.GetFileName(path)}.{Guid.NewGuid():N}.tmp");

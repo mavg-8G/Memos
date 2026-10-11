@@ -279,6 +279,26 @@ public sealed partial class MemosApp : IDisposable
         Thread.Sleep(150);
     }
 
+    /// <summary>Visible top-level windows of the app other than the main one (the print preview, for instance).</summary>
+    public nint[] OtherWindows()
+    {
+        var found = new List<nint>();
+        EnumWindows((window, _) =>
+        {
+            GetWindowThreadProcessId(window, out var processId);
+            if (processId == (uint)_process.Id && window != _process.MainWindowHandle && IsWindowVisible(window))
+            {
+                found.Add(window);
+            }
+
+            return true;
+        }, 0);
+        return [.. found];
+    }
+
+    /// <summary>Asks any window of the app to close, as its X button does.</summary>
+    public static void CloseWindow(nint window) => PostMessageW(window, 0x0010 /* WM_CLOSE */, 0, 0);
+
     /// <summary>Asks the window to close, as the X button does.</summary>
     public void RequestClose() => _process.CloseMainWindow();
 
@@ -374,6 +394,15 @@ public sealed partial class MemosApp : IDisposable
 
     [DllImport("user32.dll")]
     private static extern bool EnumChildWindows(nint parent, EnumWindowsProc callback, nint parameter);
+
+    [DllImport("user32.dll")]
+    private static extern bool EnumWindows(EnumWindowsProc callback, nint parameter);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(nint window, out uint processId);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsWindowVisible(nint window);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern int GetClassNameW(nint window, [Out] char[] name, int capacity);

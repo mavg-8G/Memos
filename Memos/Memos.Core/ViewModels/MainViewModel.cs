@@ -72,6 +72,7 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] public partial DocumentViewModel? ActiveDocument { get; set; }
     [ObservableProperty] public partial bool IsSettingsOpen { get; set; }
     [ObservableProperty] public partial bool IsMarkdownActive { get; private set; }
+    [ObservableProperty] public partial bool IsRichTextActive { get; private set; }
     [ObservableProperty] public partial bool HasErrorLog { get; private set; }
 
     /// <summary>Find and replace across all open tabs.</summary>
@@ -146,7 +147,7 @@ public partial class MainViewModel : ObservableObject
         var backups = new Dictionary<Guid, string>();
         foreach (var document in Documents)
         {
-            if (document.FilePath is null && document.Text.Length == 0)
+            if (document.FilePath is null && document.Text.Length == 0 && !document.IsModified)
             {
                 continue;
             }
@@ -154,7 +155,7 @@ public partial class MainViewModel : ObservableObject
             var hasBackup = document.IsModified || document.FilePath is null;
             if (hasBackup && document.BackupVersion != document.TextVersion)
             {
-                backups[document.Id] = document.Text;
+                backups[document.Id] = document.IsRichText ? document.RichText : document.Text;
                 document.BackupVersion = document.TextVersion;
             }
 
@@ -216,6 +217,9 @@ public partial class MainViewModel : ObservableObject
 
     [RelayCommand]
     private void NewMarkdown() => NewDocument(DocumentKind.Markdown);
+
+    [RelayCommand]
+    private void NewRichText() => NewDocument(DocumentKind.RichText);
 
     /// <summary>The "+" button: a new document of the same kind as the one being edited.</summary>
     [RelayCommand]
@@ -307,7 +311,8 @@ public partial class MainViewModel : ObservableObject
                 document.Stamp = _files.GetStamp(closed.FilePath);
             }
 
-            document.ResetText(closed.Text ?? "", modified: true);
+            if (closed.Kind == DocumentKind.RichText) document.RestoreRichText(closed.Rtf ?? "", modified: true);
+            else document.ResetText(closed.Text ?? "", modified: true);
             ActiveDocument = document;
         }
 
@@ -401,13 +406,16 @@ public partial class MainViewModel : ObservableObject
 
     // ---- View commands ------------------------------------------------------------------------------
 
-    [RelayCommand(CanExecute = nameof(HasDocument))]
+    /// <summary>Zoom scales the editor font, and an RTF document has fonts and sizes of its own.</summary>
+    private bool CanZoom => HasDocument && !IsRichTextActive;
+
+    [RelayCommand(CanExecute = nameof(CanZoom))]
     private void ZoomIn() => ActiveDocument?.ZoomIn();
 
-    [RelayCommand(CanExecute = nameof(HasDocument))]
+    [RelayCommand(CanExecute = nameof(CanZoom))]
     private void ZoomOut() => ActiveDocument?.ZoomOut();
 
-    [RelayCommand(CanExecute = nameof(HasDocument))]
+    [RelayCommand(CanExecute = nameof(CanZoom))]
     private void ResetZoom() => ActiveDocument?.ResetZoom();
 
     [RelayCommand]
@@ -469,13 +477,14 @@ public partial class MainViewModel : ObservableObject
         ActiveDocument?.Editor?.Focus();
     }
 
-    /// <summary>Switches the active document between the plain-text and the Markdown workspace.</summary>
+    /// <summary>Converting to RTF keeps the text and leaves the original file untouched.</summary>
     [RelayCommand(CanExecute = nameof(HasDocument))]
     private void SetKind(DocumentKind kind)
     {
         if (ActiveDocument is { } document && document.Kind != kind)
         {
-            document.Kind = kind;
+            if (kind == DocumentKind.RichText) document.ConvertToRichText();
+            else if (!document.IsRichText) document.Kind = kind;
         }
     }
 
@@ -535,14 +544,31 @@ public partial class MainViewModel : ObservableObject
 
     // ---- Markdown commands --------------------------------------------------------------------------
 
-    [RelayCommand(CanExecute = nameof(IsMarkdownActive))]
-    private void Bold() => ActiveDocument?.ToggleBold();
+    private bool CanFormatText => IsMarkdownActive || IsRichTextActive;
 
-    [RelayCommand(CanExecute = nameof(IsMarkdownActive))]
-    private void Italic() => ActiveDocument?.ToggleItalic();
+    [RelayCommand(CanExecute = nameof(CanFormatText))]
+    private void Bold()
+    {
+        if (IsRichTextActive) ActiveDocument?.ToggleRichStyle(RichStyle.Bold);
+        else ActiveDocument?.ToggleBold();
+    }
 
-    [RelayCommand(CanExecute = nameof(IsMarkdownActive))]
-    private void Strikethrough() => ActiveDocument?.ToggleStrikethrough();
+    [RelayCommand(CanExecute = nameof(CanFormatText))]
+    private void Italic()
+    {
+        if (IsRichTextActive) ActiveDocument?.ToggleRichStyle(RichStyle.Italic);
+        else ActiveDocument?.ToggleItalic();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanFormatText))]
+    private void Strikethrough()
+    {
+        if (IsRichTextActive) ActiveDocument?.ToggleRichStyle(RichStyle.Strikethrough);
+        else ActiveDocument?.ToggleStrikethrough();
+    }
+
+    [RelayCommand(CanExecute = nameof(IsRichTextActive))]
+    private void Underline() => ActiveDocument?.ToggleRichStyle(RichStyle.Underline);
 
     [RelayCommand(CanExecute = nameof(IsMarkdownActive))]
     private void InlineCode() => ActiveDocument?.ToggleInlineCode();
@@ -653,6 +679,31 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
+    [RelayCommand(CanExecute = nameof(HasDocument))]
+    private async Task PrintAsync()
+    {
+        var document = ActiveDocument!;
+        try
+        {
+            var html = document.IsMarkdown ? BuildExportHtml(document, forPdf: true)
+                : document.IsRichText ? RichTextPrintHtml.BuildPage(document.DisplayName, document.RichText)
+                : BuildPlainPrintHtml(document);
+            await _pdf.PrintAsync(html, document.Directory, document.DisplayName);
+        }
+        catch (Exception ex) when (FileService.IsFileSystemError(ex) || ex is InvalidOperationException or TimeoutException or System.Runtime.InteropServices.COMException)
+        {
+            await _dialogs.ShowMessageAsync(_loc.Get("Msg_Error_Title"), _loc.Format("Msg_PrintError", ex.Message));
+        }
+    }
+
+    private static string BuildPlainPrintHtml(DocumentViewModel document)
+    {
+        var title = System.Net.WebUtility.HtmlEncode(document.DisplayName);
+        var text = System.Net.WebUtility.HtmlEncode(document.Text);
+        return "<!doctype html><html><head><meta charset=\"utf-8\"><title>" + title +
+            "</title><style>@page{margin:18mm}body{font:11pt Consolas,monospace;color:#111}pre{white-space:pre-wrap;overflow-wrap:anywhere}</style></head><body><pre>" + text + "</pre></body></html>";
+    }
+
     [RelayCommand(CanExecute = nameof(IsMarkdownActive))]
     private void CopyHtml()
     {
@@ -685,7 +736,8 @@ public partial class MainViewModel : ObservableObject
     // ---- Documents ----------------------------------------------------------------------------------
 
     public static DocumentKind GetKindForPath(string path) =>
-        MarkdownExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase) ? DocumentKind.Markdown : DocumentKind.Text;
+        Path.GetExtension(path).Equals(".rtf", StringComparison.OrdinalIgnoreCase) ? DocumentKind.RichText
+        : MarkdownExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase) ? DocumentKind.Markdown : DocumentKind.Text;
 
     public DocumentViewModel NewDocument(DocumentKind kind)
     {
@@ -718,6 +770,19 @@ public partial class MainViewModel : ObservableObject
                 continue;
             }
 
+            var kind = GetKindForPath(path);
+            if (kind == DocumentKind.RichText)
+            {
+                if (await LoadRichTextAsync(path) is not { } rich) continue;
+                var oldBlank = Documents.Count == 1 && Documents[0].IsPristine ? Documents[0] : null;
+                var richDocument = AddDocument(kind, Path.GetFileName(path));
+                richDocument.LoadRichText(rich, path);
+                ActiveDocument = richDocument;
+                if (oldBlank is not null) RemoveDocument(oldBlank);
+                _recent.Add(path);
+                continue;
+            }
+
             if (await LoadAsync(path, null) is not { } loaded)
             {
                 continue;
@@ -725,7 +790,7 @@ public partial class MainViewModel : ObservableObject
 
             // An untouched blank tab gives way to the file, as Notepad does.
             var pristine = Documents.Count == 1 && Documents[0].IsPristine ? Documents[0] : null;
-            var document = AddDocument(GetKindForPath(path), Path.GetFileName(path));
+            var document = AddDocument(kind, Path.GetFileName(path));
             ApplyLoaded(document, loaded, path);
             ActiveDocument = document;
             if (pristine is not null)
@@ -767,7 +832,16 @@ public partial class MainViewModel : ObservableObject
         }
 
         var text = document.Text;
-        if (!TextEncodings.CanEncode(text, document.Encoding))
+        if (!document.IsRichText && Path.GetExtension(path).Equals(".rtf", StringComparison.OrdinalIgnoreCase))
+        {
+            document.ConvertToRichText();
+        }
+        if (document.IsRichText && !Path.GetExtension(path).Equals(".rtf", StringComparison.OrdinalIgnoreCase))
+        {
+            await _dialogs.ShowMessageAsync(_loc.Get("Msg_Error_Title"), _loc.Get("Msg_RtfExtension"));
+            return false;
+        }
+        if (!document.IsRichText && !TextEncodings.CanEncode(text, document.Encoding))
         {
             if (quiet || !await _dialogs.ConfirmAsync(_loc.Get("Msg_LossyEncoding_Title"),
                     _loc.Format("Msg_LossySave", TextEncodings.GetDisplayName(document.Encoding)),
@@ -790,8 +864,11 @@ public partial class MainViewModel : ObservableObject
 
         try
         {
-            var stamp = await _files.SaveAsync(path, text, document.Encoding, document.LineEnding);
-            if (ReferenceEquals(text, document.Text))
+            var rtf = document.IsRichText ? document.RichText : null;
+            var stamp = document.IsRichText
+                ? await _files.SaveRichTextAsync(path, rtf!)
+                : await _files.SaveAsync(path, text, document.Encoding, document.LineEnding);
+            if (ReferenceEquals(text, document.Text) && (!document.IsRichText || string.Equals(rtf, document.RichText, StringComparison.Ordinal)))
             {
                 document.MarkSaved(path, stamp);
             }
@@ -852,7 +929,8 @@ public partial class MainViewModel : ObservableObject
         {
             // A file without unsaved changes is reopened from disk; anything else keeps its text.
             var keepText = document.FilePath is null || document.IsModified;
-            _closed.Add(new ClosedDocument(document.FilePath, document.DisplayName, document.Kind, keepText ? document.Text : null, document.SelectionStart));
+            _closed.Add(new ClosedDocument(document.FilePath, document.DisplayName, document.Kind, keepText ? document.Text : null, document.SelectionStart,
+                document.IsRichText && keepText ? document.RichText : null));
             if (_closed.Count > 10)
             {
                 _closed.RemoveAt(0);
@@ -890,6 +968,7 @@ public partial class MainViewModel : ObservableObject
         }
 
         IsMarkdownActive = newValue?.IsMarkdown == true;
+        IsRichTextActive = newValue?.IsRichText == true;
         RefreshCommands();
     }
 
@@ -905,6 +984,7 @@ public partial class MainViewModel : ObservableObject
                 break;
             case nameof(DocumentViewModel.Kind):
                 IsMarkdownActive = ActiveDocument?.IsMarkdown == true;
+                IsRichTextActive = ActiveDocument?.IsRichText == true;
                 RefreshCommands();
                 break;
             case nameof(DocumentViewModel.FilePath):
@@ -1002,7 +1082,8 @@ public partial class MainViewModel : ObservableObject
                 document.FilePath = saved.FilePath;
                 document.SetEncoding(saved.Encoding);
                 document.SetLineEnding(saved.LineEnding);
-                document.ResetText(backup, modified: true);
+                if (saved.Kind == DocumentKind.RichText) document.RestoreRichText(backup, modified: true);
+                else document.ResetText(backup, modified: true);
                 document.BackupVersion = document.TextVersion;
                 if (saved.FilePath is not null)
                 {
@@ -1013,9 +1094,19 @@ public partial class MainViewModel : ObservableObject
             {
                 try
                 {
-                    var loaded = await _files.LoadAsync(saved.FilePath);
-                    document = AddDocument(saved.Kind, saved.DisplayName);
-                    ApplyLoaded(document, loaded, saved.FilePath);
+                    // Read first: a file that cannot be loaded must not leave an empty tab behind.
+                    if (saved.Kind == DocumentKind.RichText)
+                    {
+                        var rich = await _files.LoadRichTextAsync(saved.FilePath);
+                        document = AddDocument(saved.Kind, saved.DisplayName);
+                        document.LoadRichText(rich, saved.FilePath);
+                    }
+                    else
+                    {
+                        var loaded = await _files.LoadAsync(saved.FilePath);
+                        document = AddDocument(saved.Kind, saved.DisplayName);
+                        ApplyLoaded(document, loaded, saved.FilePath);
+                    }
                 }
                 catch (Exception ex) when (FileService.IsFileSystemError(ex))
                 {
@@ -1057,7 +1148,11 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
-        if (await LoadAsync(path, encoding) is { } loaded)
+        if (document.IsRichText)
+        {
+            if (await LoadRichTextAsync(path) is { } rich) document.LoadRichText(rich, path);
+        }
+        else if (await LoadAsync(path, encoding) is { } loaded)
         {
             ApplyLoaded(document, loaded, path);
         }
@@ -1097,6 +1192,24 @@ public partial class MainViewModel : ObservableObject
                 _ => _loc.Format("Msg_ReadError", name, ex.Message),
             };
             await _dialogs.ShowMessageAsync(_loc.Get("Msg_Error_Title"), message);
+            return null;
+        }
+    }
+
+    private async Task<LoadedRichText?> LoadRichTextAsync(string path)
+    {
+        var length = _files.GetLength(path);
+        if (length > FileLimits.WarnBytes && length <= FileLimits.MaxBytes &&
+            !await _dialogs.ConfirmAsync(_loc.Get("Msg_LargeFile_Title"),
+                _loc.Format("Msg_LargeFile", Path.GetFileName(path), ToMegabytes(length.Value)), _loc.Get("Btn_Open"), _loc.Get("Btn_Cancel")))
+            return null;
+        try
+        {
+            return await _files.LoadRichTextAsync(path);
+        }
+        catch (Exception ex) when (FileService.IsFileSystemError(ex))
+        {
+            await _dialogs.ShowMessageAsync(_loc.Get("Msg_Error_Title"), _loc.Format("Msg_ReadError", Path.GetFileName(path), ex.Message));
             return null;
         }
     }
@@ -1159,9 +1272,9 @@ public partial class MainViewModel : ObservableObject
                      MoveLineUpCommand, MoveLineDownCommand, UppercaseCommand, LowercaseCommand, TrimTrailingWhitespaceCommand,
                      IndentCommand, OutdentCommand, IndentationToSpacesCommand, IndentationToTabsCommand, ZoomInCommand, ZoomOutCommand,
                      ResetZoomCommand, SetKindCommand, SetViewModeCommand, ToggleOutlineCommand, SetEncodingCommand,
-                     ReopenWithEncodingCommand, SetLineEndingCommand, ToggleOverwriteCommand, BoldCommand, ItalicCommand, StrikethroughCommand, InlineCodeCommand,
+                     ReopenWithEncodingCommand, SetLineEndingCommand, ToggleOverwriteCommand, BoldCommand, ItalicCommand, UnderlineCommand, StrikethroughCommand, InlineCodeCommand,
                      HeadingCommand, QuoteCommand, BulletListCommand, NumberedListCommand, TaskListCommand, CodeBlockCommand,
-                     HorizontalRuleCommand, LinkCommand, ImageCommand, ExportHtmlCommand, ExportPdfCommand, CopyHtmlCommand,
+                     HorizontalRuleCommand, LinkCommand, ImageCommand, ExportHtmlCommand, ExportPdfCommand, PrintCommand, CopyHtmlCommand,
                  })
         {
             command.NotifyCanExecuteChanged();

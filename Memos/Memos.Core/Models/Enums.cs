@@ -4,6 +4,7 @@ public enum DocumentKind
 {
     Text,
     Markdown,
+    RichText,
 }
 
 public enum LineEnding

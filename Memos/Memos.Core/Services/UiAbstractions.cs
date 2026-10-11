@@ -48,6 +48,9 @@ public interface IPdfExporter
 {
     /// <summary>Prints an HTML document to a PDF file. Relative resources resolve against <paramref name="baseDirectory"/>.</summary>
     Task ExportAsync(string html, string? baseDirectory, string outputPath);
+
+    /// <summary>Opens an interactive print preview for the supplied page.</summary>
+    Task PrintAsync(string html, string? baseDirectory, string title);
 }
 
 /// <summary>
@@ -71,3 +74,15 @@ public interface IEditorSurface
 
     void SelectAll();
 }
+
+public interface IRichEditorSurface : IEditorSurface
+{
+    bool CanUndoRich { get; }
+    bool CanRedoRich { get; }
+    void LoadRichText(string rtf);
+    void ToggleRichStyle(RichStyle style);
+    void UndoRich();
+    void RedoRich();
+}
+
+public enum RichStyle { Bold, Italic, Underline, Strikethrough }

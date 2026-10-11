@@ -1,6 +1,6 @@
 # Memos
 
-Editor de texto y de Markdown para Windows 11, nativo (C#, .NET 10, WinUI 3 / Windows App SDK). Una alternativa moderna al Bloc de notas: ligera, con pestañas, sin conexión y **sin inteligencia artificial, telemetría, cuentas ni publicidad**.
+Editor de texto, Markdown y RTF para Windows 11, nativo (C#, .NET 10, WinUI 3 / Windows App SDK). Una alternativa moderna al Bloc de notas: ligera, con pestañas, sin conexión y **sin inteligencia artificial, telemetría, cuentas ni publicidad**.
 
 ## Funcionalidades
 
@@ -25,6 +25,13 @@ Editor de texto y de Markdown para Windows 11, nativo (C#, .NET 10, WinUI 3 / Wi
 - Deshacer/rehacer por pasos (la escritura se agrupa por palabras).
 - Barra de estado: línea y columna (por grafemas), caracteres, palabras, modo de inserción, codificación, salto de línea y zoom.
 - Fuente, tamaño y zoom son **preferencias visuales**: un `.txt` nunca recibe formato ni marcado.
+
+**Texto enriquecido e impresión**
+
+- Un documento nuevo «Con formato» se guarda como `.rtf`. También se puede convertir una pestaña de texto o Markdown desde el selector de tipo de editor; el archivo original queda intacto y se pide un nombre `.rtf` al guardar.
+- Negrita, cursiva, subrayado y tachado aplicados a la selección; los cambios sobreviven al cierre y a la recuperación de sesión.
+- Un documento RTF se muestra como una página (texto oscuro sobre blanco) también con el tema oscuro, y conserva las fuentes, tamaños y colores que traiga el archivo: abrirlo no lo modifica.
+- Archivo → Imprimir (`Ctrl+P`) abre la vista previa de impresión para texto, Markdown y RTF en una ventana propia que se cierra sola al imprimir o cancelar. La impresión RTF conserva el texto y los cuatro estilos anteriores; fuentes, colores y otros elementos RTF complejos no se reproducen.
 
 **Editor Markdown**
 
@@ -85,7 +92,7 @@ Memos\Memos\bin\x64\Debug\net10.0-windows10.0.26100.0\Memos.exe
 dotnet test Memos/Memos.Tests
 ```
 
-180 pruebas del núcleo: codificaciones y BOM, Unicode (emojis, RTL, combinados), saltos de línea, documentos vacíos y grandes, solo lectura, rutas inexistentes, archivos bloqueados, búsqueda y reemplazo (en un documento y en todas las pestañas), deshacer, modo sobrescritura, operaciones de línea, renderizado y seguridad de Markdown, front matter, exportación HTML, cierre con cambios pendientes, recuperación de sesión, registro de errores y persistencia de preferencias.
+Pruebas del núcleo: codificaciones y BOM, Unicode (emojis, RTL, combinados), saltos de línea, documentos vacíos y grandes, solo lectura, rutas inexistentes, archivos bloqueados, búsqueda y reemplazo (en un documento y en todas las pestañas), deshacer, modo sobrescritura, operaciones de línea, RTF básico, renderizado y seguridad de Markdown, front matter, exportación HTML, cierre con cambios pendientes, recuperación de sesión, registro de errores y persistencia de preferencias.
 
 ### Pruebas de interfaz
 
@@ -134,6 +141,7 @@ pwsh tools/New-BrandAssets.ps1
 |---|---|---|---|
 | Ctrl+N | Nuevo texto | Ctrl+Mayús+N | Nuevo Markdown |
 | Ctrl+O | Abrir | Ctrl+S / Ctrl+Mayús+S / Ctrl+Alt+S | Guardar / como / todo |
+| Ctrl+P | Imprimir | Ctrl+Alt+N | Nuevo RTF |
 | Ctrl+W | Cerrar pestaña | Ctrl+Mayús+T | Reabrir pestaña |
 | Ctrl+Tab / Ctrl+Mayús+Tab | Pestaña siguiente / anterior | Ctrl+, | Configuración |
 | Ctrl+Z / Ctrl+Y | Deshacer / rehacer | Ctrl+F / Ctrl+H / F3 | Buscar / reemplazar / siguiente |
@@ -149,7 +157,8 @@ pwsh tools/New-BrandAssets.ps1
 Declarados para que nada parezca implementado sin estarlo:
 
 - **Tamaño de archivo.** Se pide confirmación por encima de 2 MB y se rechazan los de más de 10 MB. El control de edición (RichEditBox) maqueta el documento completo al abrirlo. Medido en este equipo: 1 MB ASCII ≈ 1 s; 5,6 MB ASCII ≈ 4 s; 1 MB con muchos acentos ≈ 5–9 s; 5,6 MB con muchos acentos ≈ 2,5 min con la ventana sin responder. Una vez abierto, escribir en un archivo de 1 MB es fluido. El resaltado Markdown en el editor se desactiva por encima de 300 000 caracteres.
-- **Texto enriquecido (RTF):** no incluido. La aplicación trabaja con texto plano y Markdown.
+- **RTF:** se admiten archivos `.rtf` y los cuatro estilos de carácter de la barra. No hay controles para tablas, imágenes, colores ni formato de párrafo RTF. El zoom, la fuente del editor, la codificación y el salto de línea no se aplican a estos documentos. Un documento RTF no se puede volver a convertir en texto plano.
+- **Imprimir:** el encabezado y el pie (fecha, título, dirección interna de la página y número) los añade la vista previa del navegador integrado; se quitan en «Más opciones → Encabezados y pies de página», y la elección se recuerda.
 - **Caracteres invisibles:** se dibujan en una capa sobre el texto, solo para las líneas visibles. En una línea descomunal (más de 60 000 caracteres a la vista) se marcan solo los primeros.
 - **Sobrescritura:** el cursor no cambia de forma (el control no lo permite); el modo se ve en la barra de estado. Pegar siempre inserta.
 - **Front matter:** se lee como pares `clave: valor` de primer nivel para mostrarlo; no es un intérprete YAML completo. Si el bloque no tiene esa forma se muestra tal cual.
@@ -157,7 +166,6 @@ Declarados para que nada parezca implementado sin estarlo:
 - **Desplazamiento sincronizado:** del editor a la vista previa, no al revés.
 - **Saltos de línea mezclados:** se detectan y se avisa; al guardar se unifican con el predominante.
 - **Vista previa de imágenes locales:** las situadas en la carpeta del documento o por debajo de ella; un documento sin guardar no tiene carpeta.
-- **Imprimir:** no incluido (se puede exportar a PDF).
 - **Mayúsculas/minúsculas en búsqueda:** no equipara formas Unicode precompuestas y descompuestas.
 - **Búsqueda en todas las pestañas:** busca en las pestañas abiertas, no en carpetas del disco; la lista muestra como máximo 2000 coincidencias.
 

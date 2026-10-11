@@ -36,6 +36,8 @@
   <data name="Msg_AlreadyOpen" xml:space="preserve"><value>«{0}» ya está abierto en otra pestaña. Elige otro nombre.</value></data>
   <data name="Msg_ExportError" xml:space="preserve"><value>No se pudo exportar el documento.
 {0}</value></data>
+  <data name="Msg_PrintError" xml:space="preserve"><value>No se pudo abrir la impresión.
+{0}</value></data>
   <data name="Msg_LossyEncoding_Title" xml:space="preserve"><value>Se perderían caracteres</value></data>
   <data name="Msg_LossyEncoding" xml:space="preserve"><value>El documento contiene caracteres que {0} no puede representar. Si lo guardas con esa codificación se sustituirán por «?» y no podrán recuperarse.</value></data>
   <data name="Msg_LossySave" xml:space="preserve"><value>El documento contiene caracteres que {0} no puede representar y se sustituirían por «?». Cancela y cambia la codificación a UTF-8 desde la barra de estado para conservarlos.</value></data>
@@ -57,6 +59,7 @@
   <data name="Filter_Supported" xml:space="preserve"><value>Archivos de texto y Markdown</value></data>
   <data name="Filter_Text" xml:space="preserve"><value>Archivos de texto</value></data>
   <data name="Filter_Markdown" xml:space="preserve"><value>Markdown</value></data>
+  <data name="Filter_RichText" xml:space="preserve"><value>Texto enriquecido RTF</value></data>
   <data name="Filter_All" xml:space="preserve"><value>Todos los archivos</value></data>
   <data name="Filter_Images" xml:space="preserve"><value>Imágenes</value></data>
   <data name="Status_Position" xml:space="preserve"><value>Lín. {0}, col. {1}</value></data>
@@ -107,6 +110,9 @@
   <data name="Menu_Indentation" xml:space="preserve"><value>Sangría</value></data>
   <data name="Cmd_NewText" xml:space="preserve"><value>Nuevo documento de texto</value></data>
   <data name="Cmd_NewMarkdown" xml:space="preserve"><value>Nuevo documento Markdown</value></data>
+  <data name="Cmd_NewRichText" xml:space="preserve"><value>Nuevo documento con formato (RTF)</value></data>
+  <data name="Cmd_Print" xml:space="preserve"><value>Imprimir…</value></data>
+  <data name="Msg_RtfExtension" xml:space="preserve"><value>Los documentos con formato deben guardarse como archivos .rtf.</value></data>
   <data name="Cmd_Open" xml:space="preserve"><value>Abrir…</value></data>
   <data name="Cmd_Recent" xml:space="preserve"><value>Recientes</value></data>
   <data name="Cmd_Save" xml:space="preserve"><value>Guardar</value></data>
@@ -155,6 +161,7 @@
   <data name="Cmd_HeadingNone" xml:space="preserve"><value>Texto normal</value></data>
   <data name="Cmd_Bold" xml:space="preserve"><value>Negrita</value></data>
   <data name="Cmd_Italic" xml:space="preserve"><value>Cursiva</value></data>
+  <data name="Cmd_Underline" xml:space="preserve"><value>Subrayado</value></data>
   <data name="Cmd_Strikethrough" xml:space="preserve"><value>Tachado</value></data>
   <data name="Cmd_InlineCode" xml:space="preserve"><value>Código en línea</value></data>
   <data name="Cmd_Link" xml:space="preserve"><value>Enlace…</value></data>
@@ -180,6 +187,7 @@
   <data name="Workspace_Name" xml:space="preserve"><value>Tipo de editor</value></data>
   <data name="Workspace_Text" xml:space="preserve"><value>Texto</value></data>
   <data name="Workspace_Markdown" xml:space="preserve"><value>Markdown</value></data>
+  <data name="Workspace_RichText" xml:space="preserve"><value>Con formato</value></data>
   <data name="Recent_Empty" xml:space="preserve"><value>No hay archivos recientes</value></data>
   <data name="Recent_Clear" xml:space="preserve"><value>Borrar la lista</value></data>
   <data name="Drop_Open" xml:space="preserve"><value>Abrir en una pestaña</value></data>

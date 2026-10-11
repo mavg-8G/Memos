@@ -97,6 +97,7 @@
                     <MenuFlyoutItem Text="{h:Loc Key=Cmd_NewMarkdown}" Command="{x:Bind ViewModel.NewMarkdownCommand}" KeyboardAcceleratorTextOverride="Ctrl+Shift+N">
                         <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8A1;" /></MenuFlyoutItem.Icon>
                     </MenuFlyoutItem>
+                    <MenuFlyoutItem Text="{h:Loc Key=Cmd_NewRichText}" Command="{x:Bind ViewModel.NewRichTextCommand}" KeyboardAcceleratorTextOverride="Ctrl+Alt+N" />
                     <MenuFlyoutItem Text="{h:Loc Key=Cmd_Open}" Command="{x:Bind ViewModel.OpenCommand}" KeyboardAcceleratorTextOverride="Ctrl+O">
                         <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8E5;" /></MenuFlyoutItem.Icon>
                     </MenuFlyoutItem>
@@ -110,6 +111,7 @@
                     </MenuFlyoutItem>
                     <MenuFlyoutItem Text="{h:Loc Key=Cmd_SaveAll}" Command="{x:Bind ViewModel.SaveAllCommand}" KeyboardAcceleratorTextOverride="Ctrl+Alt+S" />
                     <MenuFlyoutSeparator />
+                    <MenuFlyoutItem Text="{h:Loc Key=Cmd_Print}" Command="{x:Bind ViewModel.PrintCommand}" KeyboardAcceleratorTextOverride="Ctrl+P" />
                     <MenuFlyoutSubItem Text="{h:Loc Key=Cmd_Export}" IsEnabled="{x:Bind ViewModel.IsMarkdownActive, Mode=OneWay}">
                         <MenuFlyoutItem Text="{h:Loc Key=Cmd_ExportHtml}" Command="{x:Bind ViewModel.ExportHtmlCommand}" />
                         <MenuFlyoutItem Text="{h:Loc Key=Cmd_ExportPdf}" Command="{x:Bind ViewModel.ExportPdfCommand}" />
@@ -211,6 +213,12 @@
                     <MenuFlyoutItem Text="{h:Loc Key=Cmd_Table}" Click="OnInsertDefaultTableClick" />
                     <MenuFlyoutItem Text="{h:Loc Key=Cmd_HorizontalRule}" Command="{x:Bind ViewModel.HorizontalRuleCommand}" />
                 </MenuBarItem>
+                <MenuBarItem Title="{h:Loc Key=Menu_Format}" Visibility="{x:Bind h:Ui.Visible(ViewModel.IsRichTextActive), Mode=OneWay}">
+                    <MenuFlyoutItem Text="{h:Loc Key=Cmd_Bold}" Command="{x:Bind ViewModel.BoldCommand}" KeyboardAcceleratorTextOverride="Ctrl+B" />
+                    <MenuFlyoutItem Text="{h:Loc Key=Cmd_Italic}" Command="{x:Bind ViewModel.ItalicCommand}" KeyboardAcceleratorTextOverride="Ctrl+I" />
+                    <MenuFlyoutItem Text="{h:Loc Key=Cmd_Underline}" Command="{x:Bind ViewModel.UnderlineCommand}" KeyboardAcceleratorTextOverride="Ctrl+U" />
+                    <MenuFlyoutItem Text="{h:Loc Key=Cmd_Strikethrough}" Command="{x:Bind ViewModel.StrikethroughCommand}" />
+                </MenuBarItem>
             </MenuBar>
 
             <CommandBar Grid.Column="1"
@@ -236,6 +244,11 @@
                 <AppBarButton Label="{h:Loc Key=Cmd_Find}" ToolTipService.ToolTip="{h:Loc Key=Tip_Find}" Command="{x:Bind ViewModel.FindCommand}">
                     <AppBarButton.Icon><FontIcon Glyph="&#xE721;" /></AppBarButton.Icon>
                 </AppBarButton>
+
+                <AppBarSeparator Visibility="{x:Bind h:Ui.Visible(ViewModel.IsRichTextActive), Mode=OneWay}" />
+                <AppBarButton Label="{h:Loc Key=Cmd_Bold}" Command="{x:Bind ViewModel.BoldCommand}" Visibility="{x:Bind h:Ui.Visible(ViewModel.IsRichTextActive), Mode=OneWay}"><AppBarButton.Icon><FontIcon Glyph="&#xE8DD;" /></AppBarButton.Icon></AppBarButton>
+                <AppBarButton Label="{h:Loc Key=Cmd_Italic}" Command="{x:Bind ViewModel.ItalicCommand}" Visibility="{x:Bind h:Ui.Visible(ViewModel.IsRichTextActive), Mode=OneWay}"><AppBarButton.Icon><FontIcon Glyph="&#xE8DB;" /></AppBarButton.Icon></AppBarButton>
+                <AppBarButton Label="{h:Loc Key=Cmd_Underline}" Command="{x:Bind ViewModel.UnderlineCommand}" Visibility="{x:Bind h:Ui.Visible(ViewModel.IsRichTextActive), Mode=OneWay}"><AppBarButton.Icon><FontIcon Glyph="&#xE8DC;" /></AppBarButton.Icon></AppBarButton>
 
                 <!-- Markdown workspace -->
                 <AppBarSeparator Visibility="{x:Bind h:Ui.Visible(ViewModel.IsMarkdownActive), Mode=OneWay}" />
@@ -331,6 +344,9 @@
                 <SelectorBarItem x:Name="MarkdownWorkspaceItem" Text="{h:Loc Key=Workspace_Markdown}">
                     <SelectorBarItem.Icon><FontIcon Glyph="&#xE8A1;" /></SelectorBarItem.Icon>
                 </SelectorBarItem>
+                <SelectorBarItem x:Name="RichTextWorkspaceItem" Text="{h:Loc Key=Workspace_RichText}">
+                    <SelectorBarItem.Icon><FontIcon Glyph="&#xE8D2;" /></SelectorBarItem.Icon>
+                </SelectorBarItem>
             </SelectorBar>
 
             <Button Grid.Column="3"
@@ -386,12 +402,14 @@
             <StackPanel Grid.Column="2" Orientation="Horizontal">
                 <Button x:Name="InsertModeButton"
                         Style="{StaticResource StatusBarButtonStyle}"
+                        Visibility="{x:Bind h:Ui.Collapsed(ViewModel.IsRichTextActive), Mode=OneWay}"
                         Command="{x:Bind ViewModel.ToggleOverwriteCommand}"
                         Content="{x:Bind h:Ui.InsertMode(ViewModel.ActiveDocument.IsOverwrite), Mode=OneWay}"
                         ToolTipService.ToolTip="{h:Loc Key=Status_InsertMode}"
                         AutomationProperties.HelpText="{h:Loc Key=Status_InsertMode}" />
                 <Button x:Name="ZoomButton"
                         Style="{StaticResource StatusBarButtonStyle}"
+                        Visibility="{x:Bind h:Ui.Collapsed(ViewModel.IsRichTextActive), Mode=OneWay}"
                         Content="{x:Bind h:Ui.Percent(ViewModel.ActiveDocument.ZoomPercent), Mode=OneWay}"
                         ToolTipService.ToolTip="{h:Loc Key=Status_Zoom}"
                         AutomationProperties.HelpText="{h:Loc Key=Status_Zoom}">
@@ -405,6 +423,7 @@
                 </Button>
                 <Button x:Name="LineEndingButton"
                         Style="{StaticResource StatusBarButtonStyle}"
+                        Visibility="{x:Bind h:Ui.Collapsed(ViewModel.IsRichTextActive), Mode=OneWay}"
                         Content="{x:Bind h:Ui.LineEndingName(ViewModel.ActiveDocument.LineEnding), Mode=OneWay}"
                         ToolTipService.ToolTip="{h:Loc Key=Status_LineEnding}"
                         AutomationProperties.HelpText="{h:Loc Key=Status_LineEnding}">
@@ -414,6 +433,7 @@
                 </Button>
                 <Button x:Name="EncodingButton"
                         Style="{StaticResource StatusBarButtonStyle}"
+                        Visibility="{x:Bind h:Ui.Collapsed(ViewModel.IsRichTextActive), Mode=OneWay}"
                         Content="{x:Bind h:Ui.EncodingName(ViewModel.ActiveDocument.Encoding), Mode=OneWay}"
                         ToolTipService.ToolTip="{h:Loc Key=Status_Encoding}"
                         AutomationProperties.HelpText="{h:Loc Key=Status_Encoding}">

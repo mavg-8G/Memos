@@ -1,6 +1,10 @@
 using Memos.Core.Services;
 using Memos.Core.ViewModels;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI;
+using Windows.Graphics;
 using Microsoft.Web.WebView2.Core;
 
 namespace Memos.Services;
@@ -76,6 +80,95 @@ public sealed class WebViewEnvironment(IAppPaths paths)
 /// <summary>Prints HTML to PDF with a temporary, invisible WebView2 that is disposed afterwards.</summary>
 public sealed class WebViewPdfExporter(WebViewEnvironment environment, WindowContext context) : IPdfExporter
 {
+    private Window? _printWindow;
+
+    /// <summary>
+    /// Shows the browser's print preview in a window of its own, owned by the main window, and
+    /// returns when the preview is dismissed (printed, cancelled or closed).
+    /// </summary>
+    public async Task PrintAsync(string html, string? baseDirectory, string title)
+    {
+        if (_printWindow is { } open)
+        {
+            open.Activate();
+            return;
+        }
+
+        var pageName = $"print-{Guid.NewGuid():N}.html";
+        var pagePath = Path.Combine(environment.TempDirectory, pageName);
+        Directory.CreateDirectory(environment.TempDirectory);
+        await File.WriteAllTextAsync(pagePath, html, new System.Text.UTF8Encoding(false));
+
+        var window = new Window { Title = title };
+        var view = new WebView2();
+        window.Content = view;
+        var closed = new TaskCompletionSource();
+        window.Closed += (_, _) =>
+        {
+            _printWindow = null;
+            view.Close();
+            try { File.Delete(pagePath); }
+            catch (Exception ex) when (FileService.IsFileSystemError(ex)) { }
+            closed.TrySetResult();
+        };
+        _printWindow = window;
+        PlaceOverOwner(window);
+        window.Activate();
+
+        try
+        {
+            var core = await environment.InitializeAsync(view);
+            core.SetVirtualHostNameToFolderMapping(WebViewEnvironment.AppHost, environment.TempDirectory, CoreWebView2HostResourceAccessKind.Deny);
+            WebViewEnvironment.MapDocumentFolder(core, baseDirectory);
+            var loaded = new TaskCompletionSource<bool>();
+            core.NavigationCompleted += (_, e) => loaded.TrySetResult(e.IsSuccess);
+            core.Navigate($"https://{WebViewEnvironment.AppHost}/{pageName}");
+            if (!await loaded.Task.WaitAsync(TimeSpan.FromSeconds(30))) throw new InvalidOperationException("The document could not be rendered.");
+
+            // print() only returns once the preview is gone, which is when the window has nothing left to show.
+            await Task.WhenAny(core.ExecuteScriptAsync("window.print()").AsTask(), closed.Task);
+        }
+        catch (TimeoutException)
+        {
+            throw new InvalidOperationException("The document took too long to render.");
+        }
+        catch (Exception) when (closed.Task.IsCompleted)
+        {
+            // The user closed the window while the page was still loading or the preview was open.
+        }
+        finally
+        {
+            if (!closed.Task.IsCompleted) window.Close();
+        }
+    }
+
+    /// <summary>Makes the print window a dialog of the main window, centred over it and sized for the preview.</summary>
+    private void PlaceOverOwner(Window window)
+    {
+        var appWindow = window.AppWindow;
+        appWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "Memos.ico"));
+        if (context.Window is not { } owner) return;
+
+        var presenter = Microsoft.UI.Windowing.OverlappedPresenter.CreateForDialog();
+        presenter.IsResizable = true;
+        appWindow.SetPresenter(presenter);
+        // An owned window stays above the main window and goes away with it.
+        _ = SetWindowLongPtrW(Win32Interop.GetWindowFromWindowId(appWindow.Id), -8 /* GWLP_HWNDPARENT */, Win32Interop.GetWindowFromWindowId(owner.AppWindow.Id));
+
+        var scale = owner.Content?.XamlRoot?.RasterizationScale ?? 1;
+        var area = Microsoft.UI.Windowing.DisplayArea.GetFromWindowId(owner.AppWindow.Id, Microsoft.UI.Windowing.DisplayAreaFallback.Nearest).WorkArea;
+        var width = Math.Min((int)(1000 * scale), area.Width);
+        var height = Math.Min((int)(820 * scale), area.Height);
+        var x = owner.AppWindow.Position.X + (owner.AppWindow.Size.Width - width) / 2;
+        var y = owner.AppWindow.Position.Y + (owner.AppWindow.Size.Height - height) / 2;
+        appWindow.MoveAndResize(new RectInt32(
+            Math.Clamp(x, area.X, area.X + area.Width - width),
+            Math.Clamp(y, area.Y, area.Y + area.Height - height), width, height));
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern nint SetWindowLongPtrW(nint window, int index, nint value);
+
     public async Task ExportAsync(string html, string? baseDirectory, string outputPath)
     {
         var host = context.HiddenHost ?? throw new InvalidOperationException("The window is not ready.");
