@@ -20,7 +20,8 @@
     <!-- Identity shown by Windows; change these (and Assets\Memos.ico) to rebrand the app. -->
     <AssemblyName>Memos</AssemblyName>
     <Product>Memos</Product>
-    <Version>1.0.3</Version>
+    <!-- Keep the executable's displayed version aligned with the MSIX identity. -->
+    <Version>$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\..\Memos (Package)\Package.appxmanifest')), 'Version=&quot;([0-9]+\.[0-9]+\.[0-9]+)\.[0-9]+&quot;').Groups[1].Value)</Version>
   </PropertyGroup>
 
   <!--

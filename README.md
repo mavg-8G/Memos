@@ -119,8 +119,8 @@ Para ARM64 usa `/p:Platform=ARM64`. La identidad, la versión y las asociaciones
 
 ## Nombre e icono
 
-- Nombre y versión: `Product`, `AssemblyName` y `Version` en `Memos/Memos/Memos.csproj`; `DisplayName` e `Identity` en `Package.appxmanifest`.
-- Icono: una hoja plegada con una «M» sobre fondo azul, dibujada por código en `tools/New-BrandAssets.ps1`. El script genera `Memos/Memos/Assets/Memos.ico` (9 tamaños) y las 77 imágenes de `Memos (Package)/Images` (iconos de barra de tareas e Inicio, mosaicos, logotipo de la Store y pantalla de bienvenida, en todas las escalas). Para cambiar la marca, ajusta los colores (`-TileStart`, `-TileEnd`) o el dibujo y vuelve a ejecutarlo:
+- Nombre y versión: `Product` y `AssemblyName` están en `Memos/Memos/Memos.csproj`; `Identity Version` en `Package.appxmanifest` es la fuente para la versión del ejecutable y «Acerca de».
+- Icono: una hoja plegada con una «M» sobre fondo azul, dibujada por código en `tools/New-BrandAssets.ps1`. El script genera `Memos/Memos/Assets/Memos.ico` (9 tamaños) y las 62 imágenes de `Memos (Package)/Images` (iconos de barra de tareas e Inicio, logotipo de la Store y pantalla de bienvenida, en todas las escalas). Para cambiar la marca, ajusta los colores (`-TileStart`, `-TileEnd`) o el dibujo y vuelve a ejecutarlo:
 
 ```bash
 pwsh tools/New-BrandAssets.ps1

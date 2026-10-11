@@ -7,7 +7,7 @@
     primitives, so it stays sharp at every size. Running this script rewrites:
 
       Memos/Memos/Assets/Memos.ico            window, taskbar and executable icon
-      Memos/Memos (Package)/Images/*.png      tiles, Start/taskbar icons, Store logo, splash screen
+      Memos/Memos (Package)/Images/*.png      Start/taskbar icons, Store logo, splash screen
 
     To rebrand, change the colours below (or the drawing in Draw-Mark) and run it again:
 
@@ -188,10 +188,7 @@ foreach ($scale in $scales.Keys) {
     # Windows expects half pixels rounded up (71 x 1.5 = 107), not to the nearest even number.
     $px = { param($n) [int][Math]::Floor($n * $k + 0.5) }
     Save-Png (Join-Path $images "Square44x44Logo.scale-$scale.png") (& $px 44) (& $px 44) 0.9
-    Save-Png (Join-Path $images "SmallTile.scale-$scale.png") (& $px 71) (& $px 71) 0.66
     Save-Png (Join-Path $images "Square150x150Logo.scale-$scale.png") (& $px 150) (& $px 150) 0.56
-    Save-Png (Join-Path $images "Wide310x150Logo.scale-$scale.png") (& $px 310) (& $px 150) 0.56
-    Save-Png (Join-Path $images "LargeTile.scale-$scale.png") (& $px 310) (& $px 310) 0.46
     Save-Png (Join-Path $images "StoreLogo.scale-$scale.png") (& $px 50) (& $px 50) 0.9
     Save-Png (Join-Path $images "SplashScreen.scale-$scale.png") (& $px 620) (& $px 300) 0.42
 }
