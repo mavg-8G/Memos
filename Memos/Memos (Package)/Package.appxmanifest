@@ -11,7 +11,7 @@
   <Identity
     Name="63eb2a90-0da8-4512-a844-73e098d515fb"
     Publisher="CN=mvasc"
-    Version="1.0.9.0" />
+    Version="1.0.10.0" />
 
   <mp:PhoneIdentity PhoneProductId="63eb2a90-0da8-4512-a844-73e098d515fb" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 

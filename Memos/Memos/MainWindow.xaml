@@ -52,7 +52,7 @@
                     <TabViewItem AutomationProperties.Name="{x:Bind DisplayName, Mode=OneWay}" ToolTipService.ToolTip="{x:Bind DisplayName, Mode=OneWay}">
                         <TabViewItem.Header>
                             <StackPanel Orientation="Horizontal" Spacing="6">
-                                <TextBlock Text="{x:Bind DisplayName, Mode=OneWay}" />
+                                <TextBlock Text="{x:Bind DisplayName, Mode=OneWay}" MaxWidth="200" TextTrimming="CharacterEllipsis" />
                                 <!-- Unsaved changes -->
                                 <Ellipse Width="7"
                                          Height="7"
