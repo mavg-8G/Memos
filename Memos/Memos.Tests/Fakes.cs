@@ -113,13 +113,13 @@ public sealed class FakeClipboard : IClipboardService
 
 public sealed class FakePdfExporter : IPdfExporter
 {
-    public string? Html { get; private set; }
+    public IReadOnlyList<PrintBlock>? Blocks { get; private set; }
 
     public string? OutputPath { get; private set; }
 
-    public Task ExportAsync(string html, string? baseDirectory, string outputPath)
+    public Task ExportAsync(IReadOnlyList<PrintBlock> blocks, string? baseDirectory, string outputPath)
     {
-        Html = html;
+        Blocks = blocks;
         OutputPath = outputPath;
         return Task.CompletedTask;
     }

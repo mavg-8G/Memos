@@ -20,7 +20,7 @@ public class MarkdownPrintTests
                 new PrintSpan("normal "), new PrintSpan("negrita", Bold: true), new PrintSpan(" "),
                 new PrintSpan("cursiva", Italic: true), new PrintSpan(" "), new PrintSpan("tachado", Strikethrough: true),
                 new PrintSpan(" "), new PrintSpan("código", Code: true), new PrintSpan(" "),
-                new PrintSpan("enlace", Link: true), new PrintSpan(" fin"),
+                new PrintSpan("enlace", Link: true) { LinkUrl = "https://example.com" }, new PrintSpan(" fin"),
             ],
             blocks[1].Spans);
     }
@@ -32,7 +32,7 @@ public class MarkdownPrintTests
 
         var block = Assert.Single(blocks);
         Assert.Equal(new PrintSpan("todo", Bold: true, Italic: true), block.Spans[0]);
-        Assert.Contains(new PrintSpan("enlace fuerte", Bold: true, Link: true), block.Spans);
+        Assert.Contains(new PrintSpan("enlace fuerte", Bold: true, Link: true) { LinkUrl = "x" }, block.Spans);
         Assert.Equal("todo y enlace fuerte misma línea\notra línea & más", Text(block));
     }
 
@@ -116,6 +116,48 @@ public class MarkdownPrintTests
 
         Assert.Equal(["<script>alert(1)</script>", "hola <b>mundo</b>"], blocks.Select(Text));
         Assert.All(blocks, b => Assert.Equal(PrintBlockKind.Paragraph, b.Kind));
+    }
+
+    [Fact]
+    public void Blocks_know_the_source_line_they_start_at()
+    {
+        var blocks = MarkdownPrintBuilder.Build("# A\n\npárrafo\n\n- uno\n- dos\n\n| a |\n|---|\n| 1 |");
+
+        Assert.Equal([0, 2, 4, 5, 7], blocks.Select(b => b.Line));
+    }
+
+    [Fact]
+    public void Unsafe_links_are_shown_but_go_nowhere()
+    {
+        var spans = Assert.Single(MarkdownPrintBuilder.Build("[a](javascript:alert(1)) [b](docs/otro.md) <c@example.com>")).Spans;
+
+        Assert.Equal([null, "docs/otro.md", "mailto:c@example.com"], spans.Where(s => s.Link).Select(s => s.LinkUrl));
+    }
+
+    [Fact]
+    public void Code_with_a_known_language_is_split_into_tokens_only_when_asked()
+    {
+        const string source = "```cs\nvar x = \"s\"; // c\n```";
+
+        var plain = Assert.Single(MarkdownPrintBuilder.Build(source));
+        var highlighted = Assert.Single(MarkdownPrintBuilder.Build(source, highlightCode: true));
+
+        Assert.All(plain.Spans, span => Assert.Equal(CodeToken.None, span.Token));
+        Assert.Equal(Text(plain), Text(highlighted));
+        Assert.Contains(new PrintSpan("var", Code: true) { Token = CodeToken.Keyword }, highlighted.Spans);
+        Assert.Contains(highlighted.Spans, span => span.Token == CodeToken.String && span.Text == "\"s\"");
+        Assert.Contains(highlighted.Spans, span => span.Token == CodeToken.Comment && span.Text.StartsWith("// c", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void The_preview_shows_the_front_matter_as_a_table()
+    {
+        var analysis = new MarkdownService().Analyze("---\ntitle: Hola\n---\ntexto", new MarkdownRenderOptions(IncludeHtml: false, IncludeNative: true));
+
+        Assert.Empty(analysis.Blocks);
+        Assert.Equal("Hola", analysis.FrontMatter!["title"]);
+        Assert.Equal([PrintBlockKind.Table, PrintBlockKind.Paragraph], analysis.Native.Select(b => b.Kind));
+        Assert.Equal(["title", "Hola"], analysis.Native[0].Rows[0].Select(c => string.Concat(c.Spans.Select(s => s.Text))));
     }
 
     [Theory]

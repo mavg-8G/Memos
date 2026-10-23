@@ -676,7 +676,7 @@ public partial class MainViewModel : ObservableObject
 
         try
         {
-            var html = BuildExportHtml(document, forPdf: false);
+            var html = BuildExportHtml(document);
             await _files.SaveAsync(path, html, TextEncodingId.Utf8, LineEnding.Lf);
         }
         catch (Exception ex) when (FileService.IsFileSystemError(ex))
@@ -696,7 +696,7 @@ public partial class MainViewModel : ObservableObject
 
         try
         {
-            await _pdf.ExportAsync(BuildExportHtml(document, forPdf: true), document.Directory, path);
+            await _pdf.ExportAsync(MarkdownPrintBuilder.Build(document.Text, Settings.CodeHighlighting), document.Directory, path);
         }
         catch (Exception ex) when (FileService.IsFileSystemError(ex) || ex is InvalidOperationException)
         {
@@ -739,21 +739,18 @@ public partial class MainViewModel : ObservableObject
         _clipboard.SetHtml(html, html);
     }
 
-    /// <summary>The complete HTML document used by both export formats.</summary>
-    public string BuildExportHtml(DocumentViewModel document, bool forPdf)
+    /// <summary>The complete HTML document of the HTML export.</summary>
+    public string BuildExportHtml(DocumentViewModel document)
     {
-        var analysis = _markdown.Analyze(document.Text,
-            new MarkdownRenderOptions(Settings.CodeHighlighting, forPdf ? document.PreviewResourceBase : null, IncludeFrontMatter: false));
+        var analysis = _markdown.Analyze(document.Text, new MarkdownRenderOptions(Settings.CodeHighlighting, IncludeFrontMatter: false));
 
         // Front matter is metadata: it is not part of the exported body, but its title names the page.
         var title = analysis.FrontMatter?["title"] is { Length: > 0 } declared ? declared : GetBaseName(document);
         return HtmlDocumentBuilder.BuildPage(title, HtmlDocumentBuilder.WrapBlocks(analysis.Blocks), new HtmlPageOptions
         {
-            Dark = forPdf ? false : null,
             Style = Settings.PreviewStyle,
             FontSize = Settings.PreviewFontSize,
             AllowRemoteImages = Settings.AllowRemoteImages,
-            LocalResourceOrigin = forPdf ? DocumentViewModel.PreviewOrigin : null,
             Language = _loc.Get("LanguageTag"),
         });
     }

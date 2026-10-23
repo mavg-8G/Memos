@@ -22,13 +22,13 @@ public sealed partial class DocumentView : UserControl
     private bool _scrollSyncQueued;
     private bool _closed;
 
-    public DocumentView(DocumentViewModel document, AppSettings settings, WebViewEnvironment environment, ILocalizer localizer)
+    public DocumentView(DocumentViewModel document, AppSettings settings)
     {
         Document = document;
         _settings = settings;
         InitializeComponent();
 
-        Preview.Configure(environment, settings, localizer);
+        Preview.Configure(settings);
         Preview.LocalFileActivated += (_, path) => LocalFileActivated?.Invoke(this, path);
         Editor.Attach(document, settings);
         Editor.ViewChanged += (_, _) => QueueScrollSync();

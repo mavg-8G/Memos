@@ -5,21 +5,11 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:h="using:Memos.Helpers">
 
-    <!-- The WebView2 is created on first use so text-only sessions never start a browser process. -->
-    <Grid x:Name="Host" AutomationProperties.Name="{h:Loc Key=Preview_Name}">
-        <!-- Shown while the browser behind the preview starts. -->
-        <ProgressRing x:Name="LoadingRing"
-                      Width="32"
-                      Height="32"
-                      HorizontalAlignment="Center"
-                      VerticalAlignment="Center"
-                      IsActive="False" />
-        <InfoBar x:Name="ErrorBar"
-                 VerticalAlignment="Top"
-                 Margin="12"
-                 IsClosable="False"
-                 IsOpen="False"
-                 Severity="Error"
-                 Message="{h:Loc Key=Preview_Unavailable}" />
-    </Grid>
+    <!-- Native text: nothing to start, so the preview appears with the document. -->
+    <ScrollViewer x:Name="Scroller"
+                  AutomationProperties.Name="{h:Loc Key=Preview_Name}"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+        <StackPanel x:Name="Body" MaxWidth="880" Padding="28,20,28,28" />
+    </ScrollViewer>
 </UserControl>

@@ -48,8 +48,8 @@ public interface IClipboardService
 
 public interface IPdfExporter
 {
-    /// <summary>Prints an HTML document to a PDF file. Relative resources resolve against <paramref name="baseDirectory"/>.</summary>
-    Task ExportAsync(string html, string? baseDirectory, string outputPath);
+    /// <summary>Writes a Markdown document to a PDF file. Relative pictures resolve against <paramref name="baseDirectory"/>.</summary>
+    Task ExportAsync(IReadOnlyList<PrintBlock> blocks, string? baseDirectory, string outputPath);
 }
 
 /// <summary>Printing through the print dialog of Windows. Both calls return once the dialog is showing.</summary>

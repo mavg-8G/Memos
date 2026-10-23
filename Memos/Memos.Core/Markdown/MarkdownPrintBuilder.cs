@@ -11,7 +11,27 @@ namespace Memos.Core.Markdown;
 
 /// <summary>A stretch of text of a printed Markdown document, or an image with its alternative text.</summary>
 public sealed record PrintSpan(
-    string Text, bool Bold = false, bool Italic = false, bool Strikethrough = false, bool Code = false, bool Link = false, string? ImageUrl = null);
+    string Text, bool Bold = false, bool Italic = false, bool Strikethrough = false, bool Code = false, bool Link = false, string? ImageUrl = null)
+{
+    /// <summary>Where a link goes; null when the link is only shown, as on paper.</summary>
+    public string? LinkUrl { get; init; }
+
+    /// <summary>Kind of token, inside highlighted code.</summary>
+    public CodeToken Token { get; init; }
+}
+
+public enum CodeToken : byte
+{
+    None,
+    Keyword,
+    String,
+    Comment,
+    Number,
+    Type,
+    Preprocessor,
+    Tag,
+    Attribute,
+}
 
 public enum PrintBlockKind
 {
@@ -40,6 +60,9 @@ public sealed record PrintBlock(PrintBlockKind Kind, IReadOnlyList<PrintSpan> Sp
     /// <summary>Heading level, 1 to 6.</summary>
     public int Level { get; init; }
 
+    /// <summary>Zero-based source line the block starts at.</summary>
+    public int Line { get; init; }
+
     /// <summary>Number of lists the block is inside of.</summary>
     public int Indent { get; init; }
 
@@ -53,11 +76,12 @@ public sealed record PrintBlock(PrintBlockKind Kind, IReadOnlyList<PrintSpan> Sp
 }
 
 /// <summary>
-/// Reads Markdown into the blocks the printer lays out as native text, with the same syntax
-/// extensions as the preview. The front matter is metadata and is left out, as in the exports.
+/// Reads Markdown into the blocks the preview, the printer and the PDF export lay out as native
+/// text. The front matter is metadata: only the preview shows it.
 /// </summary>
 public static class MarkdownPrintBuilder
 {
+    private sealed record Options(bool HighlightCode);
     private sealed class Frame(int indent, int quoteDepth, string? marker)
     {
         public int Indent { get; } = indent;
@@ -75,16 +99,36 @@ public static class MarkdownPrintBuilder
         }
     }
 
-    private readonly record struct Style(bool Bold = false, bool Italic = false, bool Strikethrough = false, bool Link = false);
+    private readonly record struct Style(bool Bold = false, bool Italic = false, bool Strikethrough = false, bool Link = false, string? LinkUrl = null);
 
-    public static IReadOnlyList<PrintBlock> Build(string text)
+    public static IReadOnlyList<PrintBlock> Build(string text, bool highlightCode = false) =>
+        Build(Markdig.Markdown.Parse(text, MarkdownService.Pipeline), highlightCode, includeFrontMatter: false);
+
+    internal static IReadOnlyList<PrintBlock> Build(MarkdownDocument document, bool highlightCode, bool includeFrontMatter)
     {
         var blocks = new List<PrintBlock>();
-        AddBlocks(Markdig.Markdown.Parse(text, MarkdownService.Pipeline), blocks, new Frame(0, 0, null));
+        if (includeFrontMatter && document.Count > 0 && document[0] is YamlFrontMatterBlock yaml)
+        {
+            blocks.Add(GetFrontMatter(FrontMatter.Parse(yaml.Lines.ToString())));
+        }
+
+        AddBlocks(document, blocks, new Frame(0, 0, null), new Options(highlightCode));
         return blocks;
     }
 
-    private static void AddBlocks(ContainerBlock container, List<PrintBlock> blocks, Frame frame)
+    /// <summary>The metadata as a table of its entries, or as its raw text when it is not a simple mapping.</summary>
+    private static PrintBlock GetFrontMatter(FrontMatter frontMatter) => frontMatter.Entries.Count == 0
+        ? new PrintBlock(PrintBlockKind.Code, [new PrintSpan(frontMatter.Raw.Trim('\n'), Code: true)])
+        : new PrintBlock(PrintBlockKind.Table, [])
+        {
+            Rows = frontMatter.Entries.Select(entry => (IReadOnlyList<PrintCell>)
+            [
+                new PrintCell([new PrintSpan(entry.Key)], IsHeader: true, PrintAlignment.Left),
+                new PrintCell([new PrintSpan(entry.Value)], IsHeader: false, PrintAlignment.Left),
+            ]).ToList(),
+        };
+
+    private static void AddBlocks(ContainerBlock container, List<PrintBlock> blocks, Frame frame, Options options)
     {
         foreach (var block in container)
         {
@@ -93,23 +137,28 @@ public static class MarkdownPrintBuilder
                 case YamlFrontMatterBlock or LinkReferenceDefinitionGroup:
                     break;
                 case HeadingBlock heading:
-                    Add(blocks, frame, PrintBlockKind.Heading, GetSpans(heading.Inline), heading.Level);
+                    Add(blocks, frame, block, PrintBlockKind.Heading, GetSpans(heading.Inline), heading.Level);
                     break;
                 case CodeBlock code:
-                    Add(blocks, frame, PrintBlockKind.Code, [new PrintSpan(code.Lines.ToString(), Code: true)]);
+                    var source = code.Lines.ToString();
+                    Add(blocks, frame, block, PrintBlockKind.Code,
+                        options.HighlightCode && code is FencedCodeBlock { Info: { Length: > 0 } info } && CodeHighlighter.FindLanguage(info) is { } language
+                            ? CodeHighlighter.Tokenize(language, source)
+                            : [new PrintSpan(source, Code: true)]);
                     break;
                 case ThematicBreakBlock:
-                    Add(blocks, frame, PrintBlockKind.Rule, []);
+                    Add(blocks, frame, block, PrintBlockKind.Rule, []);
                     break;
                 case QuoteBlock quote:
-                    AddBlocks(quote, blocks, new Frame(frame.Indent, frame.QuoteDepth + 1, frame.TakeMarker()));
+                    AddBlocks(quote, blocks, new Frame(frame.Indent, frame.QuoteDepth + 1, frame.TakeMarker()), options);
                     break;
                 case ListBlock list:
-                    AddList(list, blocks, frame);
+                    AddList(list, blocks, frame, options);
                     break;
                 case Table table:
                     blocks.Add(new PrintBlock(PrintBlockKind.Table, [])
                     {
+                        Line = block.Line,
                         Indent = frame.Indent,
                         QuoteDepth = frame.QuoteDepth,
                         Marker = frame.TakeMarker(),
@@ -117,29 +166,29 @@ public static class MarkdownPrintBuilder
                     });
                     break;
                 case FootnoteGroup footnotes:
-                    Add(blocks, frame, PrintBlockKind.Rule, []);
+                    Add(blocks, frame, block, PrintBlockKind.Rule, []);
                     foreach (var footnote in footnotes.OfType<Footnote>())
                     {
-                        AddItem(footnote, blocks, frame, footnote.Order.ToString(CultureInfo.InvariantCulture) + ".");
+                        AddItem(footnote, blocks, frame, footnote.Order.ToString(CultureInfo.InvariantCulture) + ".", options);
                     }
 
                     break;
                 case ContainerBlock other:
-                    AddBlocks(other, blocks, frame);
+                    AddBlocks(other, blocks, frame, options);
                     break;
                 case LeafBlock leaf:
-                    Add(blocks, frame, PrintBlockKind.Paragraph, GetSpans(leaf.Inline));
+                    Add(blocks, frame, block, PrintBlockKind.Paragraph, GetSpans(leaf.Inline));
                     break;
             }
         }
     }
 
-    private static void AddList(ListBlock list, List<PrintBlock> blocks, Frame frame)
+    private static void AddList(ListBlock list, List<PrintBlock> blocks, Frame frame, Options options)
     {
         // A list that opens a list item keeps that item's marker on a line of its own.
         if (frame.TakeMarker() is { } pending)
         {
-            blocks.Add(new PrintBlock(PrintBlockKind.Paragraph, []) { Indent = frame.Indent, QuoteDepth = frame.QuoteDepth, Marker = pending });
+            blocks.Add(new PrintBlock(PrintBlockKind.Paragraph, []) { Line = list.Line, Indent = frame.Indent, QuoteDepth = frame.QuoteDepth, Marker = pending });
         }
 
         var number = list.IsOrdered && int.TryParse(list.OrderedStart, NumberStyles.None, CultureInfo.InvariantCulture, out var start) ? start : 1;
@@ -151,23 +200,23 @@ public static class MarkdownPrintBuilder
                 marker = task.Checked ? "☑" : "☐";
             }
 
-            AddItem(item, blocks, frame, marker);
+            AddItem(item, blocks, frame, marker, options);
         }
     }
 
-    private static void AddItem(ContainerBlock item, List<PrintBlock> blocks, Frame frame, string marker)
+    private static void AddItem(ContainerBlock item, List<PrintBlock> blocks, Frame frame, string marker, Options options)
     {
         var inner = new Frame(frame.Indent + 1, frame.QuoteDepth, marker);
-        AddBlocks(item, blocks, inner);
+        AddBlocks(item, blocks, inner, options);
         if (inner.Marker is not null)
         {
             // An item without content still shows its bullet.
-            Add(blocks, inner, PrintBlockKind.Paragraph, []);
+            Add(blocks, inner, item, PrintBlockKind.Paragraph, []);
         }
     }
 
-    private static void Add(List<PrintBlock> blocks, Frame frame, PrintBlockKind kind, IReadOnlyList<PrintSpan> spans, int level = 0) =>
-        blocks.Add(new PrintBlock(kind, spans) { Level = level, Indent = frame.Indent, QuoteDepth = frame.QuoteDepth, Marker = frame.TakeMarker() });
+    private static void Add(List<PrintBlock> blocks, Frame frame, Block source, PrintBlockKind kind, IReadOnlyList<PrintSpan> spans, int level = 0) =>
+        blocks.Add(new PrintBlock(kind, spans) { Line = source.Line, Level = level, Indent = frame.Indent, QuoteDepth = frame.QuoteDepth, Marker = frame.TakeMarker() });
 
     private static List<IReadOnlyList<PrintCell>> GetRows(Table table)
     {
@@ -242,7 +291,8 @@ public static class MarkdownPrintBuilder
                     Append(spans, Styled(entity.Transcoded.ToString(), style));
                     break;
                 case AutolinkInline autolink:
-                    Append(spans, Styled(autolink.Url, style) with { Link = true });
+                    var target = autolink.IsEmail ? "mailto:" + autolink.Url : autolink.Url;
+                    Append(spans, Styled(autolink.Url, style) with { Link = true, LinkUrl = MarkdownService.IsSafeUrl(target, isImage: false) ? target : null });
                     break;
                 case FootnoteLink { IsBackLink: false } footnote:
                     Append(spans, Styled("[" + footnote.Footnote.Order.ToString(CultureInfo.InvariantCulture) + "]", style));
@@ -256,7 +306,11 @@ public static class MarkdownPrintBuilder
                         : Styled(alt, style));
                     break;
                 case LinkInline link:
-                    AddSpans(link, spans, style with { Link = true });
+                    AddSpans(link, spans, style with
+                    {
+                        Link = true,
+                        LinkUrl = !string.IsNullOrWhiteSpace(link.Url) && MarkdownService.IsSafeUrl(link.Url, isImage: false) ? link.Url : null,
+                    });
                     break;
                 case EmphasisInline emphasis:
                     AddSpans(emphasis, spans, emphasis.DelimiterChar == '~' ? style with { Strikethrough = true }
@@ -273,7 +327,8 @@ public static class MarkdownPrintBuilder
         }
     }
 
-    private static PrintSpan Styled(string text, Style style) => new(text, style.Bold, style.Italic, style.Strikethrough, Link: style.Link);
+    private static PrintSpan Styled(string text, Style style) =>
+        new(text, style.Bold, style.Italic, style.Strikethrough, Link: style.Link) { LinkUrl = style.LinkUrl };
 
     /// <summary>Adds a span, joining it to the previous one when both look the same.</summary>
     private static void Append(List<PrintSpan> spans, PrintSpan span)

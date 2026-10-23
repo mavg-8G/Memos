@@ -178,7 +178,7 @@ public class FrontMatterTests
         var path = app.WriteFile("nota.md", Source);
         await app.Main.InitializeAsync([path]);
 
-        var html = app.Main.BuildExportHtml(app.Active, forPdf: false);
+        var html = app.Main.BuildExportHtml(app.Active);
 
         Assert.Contains("<title>Mi documento</title>", html);
         Assert.DoesNotContain("class=\"front-matter\"", html);

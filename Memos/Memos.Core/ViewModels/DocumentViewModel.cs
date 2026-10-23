@@ -26,11 +26,6 @@ public sealed class AnalysisChangedEventArgs(MarkdownAnalysis? analysis, Markdow
 /// </summary>
 public partial class DocumentViewModel : ObservableObject, IDisposable
 {
-    /// <summary>Virtual host the preview uses to load images from the document's folder.</summary>
-    public const string PreviewHost = "memos-doc.example";
-
-    public const string PreviewOrigin = "https://" + PreviewHost;
-
     private readonly DocumentServices _services;
     private readonly UndoHistory _history = new();
     private readonly Debouncer _analysisDebouncer = new();
@@ -109,9 +104,6 @@ public partial class DocumentViewModel : ObservableObject, IDisposable
 
     /// <summary>A new, empty, never-edited document; opening a file may take its place.</summary>
     public bool IsPristine => FilePath is null && !IsModified && Text.Length == 0;
-
-    /// <summary>Base URL that makes relative image paths resolve inside the preview.</summary>
-    public string? PreviewResourceBase => FilePath is null ? null : PreviewOrigin + "/";
 
     public string? Directory => FilePath is null ? null : Path.GetDirectoryName(FilePath);
 
@@ -586,7 +578,6 @@ public partial class DocumentViewModel : ObservableObject, IDisposable
 
     partial void OnFilePathChanged(string? value)
     {
-        OnPropertyChanged(nameof(PreviewResourceBase));
         OnPropertyChanged(nameof(Directory));
     }
 
@@ -836,8 +827,9 @@ public partial class DocumentViewModel : ObservableObject, IDisposable
         var version = TextVersion;
         var options = new MarkdownRenderOptions(
             Settings.CodeHighlighting,
-            PreviewResourceBase,
-            IncludeSyntaxRuns: Settings.MarkdownSyntaxHighlighting && text.Length <= FileLimits.MaxHighlightChars);
+            IncludeSyntaxRuns: Settings.MarkdownSyntaxHighlighting && text.Length <= FileLimits.MaxHighlightChars,
+            IncludeHtml: false,
+            IncludeNative: true);
 
         var (analysis, elapsed) = await Task.Run(() =>
         {

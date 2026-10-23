@@ -15,9 +15,8 @@ namespace Memos.UITests;
 public sealed partial class MemosApp : IDisposable
 {
     /// <summary>
-    /// English interface, and Markdown documents open without the preview: the WebView2 exposes the
-    /// rendered page as a second, cross-process automation tree that makes searches of the window
-    /// unreliable, so tests that are not about the preview keep it closed.
+    /// English interface, and Markdown documents open without the preview: its rendered text adds
+    /// many elements to the automation tree, so tests that are not about the preview keep it closed.
     /// </summary>
     public const string DefaultSettings =
         """{ "Language": "en-US", "MarkdownViewMode": "Editor", "WindowWidth": 1200, "WindowHeight": 760 }""";
@@ -384,7 +383,7 @@ public sealed partial class MemosApp : IDisposable
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            // The WebView2 profile can stay locked for a moment; the temp folder is cleaned by the OS.
+            // A file can stay locked for a moment after the app exits; the temp folder is cleaned by the OS.
         }
     }
 

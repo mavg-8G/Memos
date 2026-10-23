@@ -21,14 +21,22 @@ public sealed record MarkdownAnalysis(
     IReadOnlyList<MarkdownBlock> Blocks,
     IReadOnlyList<HeadingInfo> Headings,
     IReadOnlyList<SyntaxRun> Runs,
-    FrontMatter? FrontMatter = null);
+    FrontMatter? FrontMatter = null)
+{
+    /// <summary>The document as native blocks, for the preview; empty unless asked for.</summary>
+    public IReadOnlyList<PrintBlock> Native { get; init; } = [];
+}
 
 /// <param name="IncludeFrontMatter">Show the YAML front matter as a metadata block (preview) or leave it out (export).</param>
+/// <param name="IncludeHtml">Render the HTML blocks (exports, clipboard).</param>
+/// <param name="IncludeNative">Build the native blocks (preview).</param>
 public sealed record MarkdownRenderOptions(
     bool CodeHighlighting = true,
     string? RelativeUrlBase = null,
     bool IncludeSyntaxRuns = false,
-    bool IncludeFrontMatter = true);
+    bool IncludeFrontMatter = true,
+    bool IncludeHtml = true,
+    bool IncludeNative = false);
 
 public interface IMarkdownService
 {
@@ -65,6 +73,15 @@ public sealed class MarkdownService : IMarkdownService
         {
             cancellationToken.ThrowIfCancellationRequested();
             Visit(block, painter, headings, text);
+        }
+
+        var native = options.IncludeNative
+            ? MarkdownPrintBuilder.Build(document, options.CodeHighlighting, options.IncludeFrontMatter)
+            : [];
+        if (!options.IncludeHtml)
+        {
+            var yaml = document.Count > 0 ? document[0] as YamlFrontMatterBlock : null;
+            return new MarkdownAnalysis([], headings, painter?.ToRuns() ?? [], yaml is null ? null : FrontMatter.Parse(yaml.Lines.ToString())) { Native = native };
         }
 
         using var writer = new BlockWriter();
@@ -108,7 +125,7 @@ public sealed class MarkdownService : IMarkdownService
             }
         }
 
-        return new MarkdownAnalysis(blocks, headings, painter?.ToRuns() ?? [], frontMatter);
+        return new MarkdownAnalysis(blocks, headings, painter?.ToRuns() ?? [], frontMatter) { Native = native };
     }
 
     /// <summary>
@@ -119,7 +136,7 @@ public sealed class MarkdownService : IMarkdownService
         new MarkdownService().Analyze(
             "---\ntitle: t\n---\n# T\n\nA **b** *c* ~~d~~ `e` [f](g) https://example.com h[^1]\n\n> q\n\n- [x] i\n\n1. j\n\n" +
             "| k | l |\n|---|--:|\n| 1 | 2 |\n\n```csharp\nvar m = \"n\"; // o\n```\n\n[^1]: p\n",
-            new MarkdownRenderOptions(IncludeSyntaxRuns: true));
+            new MarkdownRenderOptions(IncludeSyntaxRuns: true, IncludeNative: true));
 
     /// <summary>
     /// Only ordinary web, mail and relative links are kept. Anything that could run code when clicked

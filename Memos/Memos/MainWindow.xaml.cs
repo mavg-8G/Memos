@@ -26,7 +26,6 @@ public sealed partial class MainWindow : Window
 {
     private readonly Dictionary<DocumentViewModel, DocumentView> _views = [];
     private readonly ISettingsService _settingsService;
-    private readonly WebViewEnvironment _webViewEnvironment;
     private readonly ILocalizer _loc;
     private readonly WindowContext _context;
     private DocumentViewModel? _observedDocument;
@@ -39,11 +38,10 @@ public sealed partial class MainWindow : Window
 
     public MainWindow(
         MainViewModel viewModel, ISettingsService settingsService, WindowContext context, ThemeService theme,
-        WebViewEnvironment webViewEnvironment, ILocalizer localizer)
+        ILocalizer localizer)
     {
         ViewModel = viewModel;
         _settingsService = settingsService;
-        _webViewEnvironment = webViewEnvironment;
         _loc = localizer;
         _context = context;
         InitializeComponent();
@@ -134,7 +132,6 @@ public sealed partial class MainWindow : Window
                 view.Close();
             }
 
-            _webViewEnvironment.Shutdown();
             _closeConfirmed = true;
             Close();
         }
@@ -224,7 +221,7 @@ public sealed partial class MainWindow : Window
         _observedRichText = document.IsRichText;
         if (!_views.TryGetValue(document, out var active))
         {
-            active = new DocumentView(document, ViewModel.Settings, _webViewEnvironment, _loc);
+            active = new DocumentView(document, ViewModel.Settings);
             active.LocalFileActivated += async (_, path) => await ViewModel.OpenPathsAsync([path]);
             _views[document] = active;
             DocumentHost.Children.Add(active);

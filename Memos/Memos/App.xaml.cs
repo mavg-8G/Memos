@@ -89,8 +89,7 @@ public partial class App : Application
         services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<IFilePickerService, FilePickerService>();
         services.AddSingleton<IClipboardService, ClipboardService>();
-        services.AddSingleton<WebViewEnvironment>();
-        services.AddSingleton<IPdfExporter, WebViewPdfExporter>();
+        services.AddSingleton<IPdfExporter, NativePdfExporter>();
         services.AddSingleton<IPrintService, WindowsPrintService>();
         services.AddSingleton<ThemeService>();
 

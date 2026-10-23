@@ -1,3 +1,4 @@
+using Memos.Core.Markdown;
 using Memos.Core.Models;
 using Memos.Core.Services;
 using Memos.Core.ViewModels;
@@ -586,8 +587,8 @@ public class MainViewModelTests
         await app.Main.ExportPdfCommand.ExecuteAsync(null);
 
         Assert.Equal(app.Pickers.ExportAnswer, app.Pdf.OutputPath);
-        Assert.Contains("color-scheme:light;", app.Pdf.Html);
-        Assert.Contains("src=\"https://memos-doc.example/logo.png\"", app.Pdf.Html);
+        Assert.Equal(PrintBlockKind.Heading, app.Pdf.Blocks![0].Kind);
+        Assert.Contains(app.Pdf.Blocks, block => block.Spans.Any(span => span.ImageUrl == "logo.png"));
 
         app.Main.CopyHtmlCommand.Execute(null);
         Assert.StartsWith("<h1 id=\"informe\">Informe</h1>", app.Clipboard.Html);

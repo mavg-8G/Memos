@@ -451,7 +451,7 @@
         <!-- Settings cover the workspace below the title bar. -->
         <Grid x:Name="SettingsHost" Grid.Row="1" Grid.RowSpan="3" Visibility="Collapsed" />
 
-        <!-- Invisible home for the WebView2 that prints PDFs. -->
+        <!-- Invisible home for the pages being printed or exported to PDF. -->
         <Canvas x:Name="HiddenHost" Width="0" Height="0" IsHitTestVisible="False" Opacity="0" />
     </Grid>
 </Window>

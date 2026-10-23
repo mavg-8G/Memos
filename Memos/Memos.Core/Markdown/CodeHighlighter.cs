@@ -1,4 +1,5 @@
 using ColorCode;
+using ColorCode.Common;
 using System.Collections.Concurrent;
 
 namespace Memos.Core.Markdown;
@@ -18,16 +19,23 @@ internal static class CodeHighlighter
 
     // Two generations make a cheap LRU: entries still in use move to the recent one, and what was
     // not asked for during a whole generation goes away with the older one.
-    private static Dictionary<Key, string> _recent = [];
-    private static Dictionary<Key, string> _older = [];
+    private static Dictionary<Key, object> _recent = [];
+    private static Dictionary<Key, object> _older = [];
     private static int _recentSize;
 
-    private readonly record struct Key(string LanguageId, string Code);
+    /// <param name="Native">Spans for native text rather than HTML.</param>
+    private readonly record struct Key(string LanguageId, string Code, bool Native);
 
     /// <summary>The highlighted HTML of a piece of code.</summary>
-    public static string Highlight(ILanguage language, string code)
+    public static string Highlight(ILanguage language, string code) =>
+        (string)GetOrAdd(new Key(language.Id, code, Native: false), () => new HtmlClassFormatter().GetHtmlString(code, language), code.Length);
+
+    /// <summary>The code split into stretches of one token kind each, for native text.</summary>
+    public static IReadOnlyList<PrintSpan> Tokenize(ILanguage language, string code) =>
+        (IReadOnlyList<PrintSpan>)GetOrAdd(new Key(language.Id, code, Native: true), () => new TokenColorizer().Tokenize(code, language), code.Length);
+
+    private static object GetOrAdd(Key key, Func<object> create, int size)
     {
-        var key = new Key(language.Id, code);
         lock (Gate)
         {
             if (_recent.TryGetValue(key, out var cached))
@@ -37,18 +45,87 @@ internal static class CodeHighlighter
 
             if (_older.TryGetValue(key, out cached))
             {
-                Remember(key, cached);
+                Remember(key, cached, size);
                 return cached;
             }
         }
 
-        var html = new HtmlClassFormatter().GetHtmlString(code, language);
+        var value = create();
         lock (Gate)
         {
-            Remember(key, html);
+            Remember(key, value, size + (value is string html ? html.Length : size));
         }
 
-        return html;
+        return value;
+    }
+
+    /// <summary>Receives ColorCode's scopes and turns them into spans.</summary>
+    private sealed class TokenColorizer() : CodeColorizerBase(null, null)
+    {
+        private readonly List<PrintSpan> _spans = [];
+
+        public List<PrintSpan> Tokenize(string code, ILanguage language)
+        {
+            languageParser.Parse(code, language, Write);
+            return _spans;
+        }
+
+        protected override void Write(string parsedSourceCode, IList<ColorCode.Parsing.Scope> scopes)
+        {
+            // Scopes nest; children are painted over their parents.
+            var tokens = new CodeToken[parsedSourceCode.Length];
+            Paint(tokens, scopes);
+            var start = 0;
+            for (var i = 1; i <= tokens.Length; i++)
+            {
+                if (i == tokens.Length || tokens[i] != tokens[start])
+                {
+                    var text = parsedSourceCode[start..i];
+                    if (_spans.Count > 0 && _spans[^1].Token == tokens[start])
+                    {
+                        _spans[^1] = _spans[^1] with { Text = _spans[^1].Text + text };
+                    }
+                    else
+                    {
+                        _spans.Add(new PrintSpan(text, Code: true) { Token = tokens[start] });
+                    }
+
+                    start = i;
+                }
+            }
+        }
+
+        private static void Paint(CodeToken[] tokens, IList<ColorCode.Parsing.Scope> scopes)
+        {
+            foreach (var scope in scopes)
+            {
+                var token = ToToken(scope.Name);
+                var end = Math.Min(tokens.Length, scope.Index + scope.Length);
+                for (var i = Math.Max(0, scope.Index); i < end; i++)
+                {
+                    tokens[i] = token;
+                }
+
+                Paint(tokens, scope.Children);
+            }
+        }
+
+        private static CodeToken ToToken(string scope) => scope switch
+        {
+            ScopeName.Keyword or ScopeName.ControlKeyword or ScopeName.PseudoKeyword or ScopeName.Predefined or ScopeName.JsonConst
+                or ScopeName.BuiltinValue or ScopeName.PowerShellCommand or ScopeName.SqlSystemFunction => CodeToken.Keyword,
+            ScopeName.String or ScopeName.StringCSharpVerbatim or ScopeName.StringEscape or ScopeName.JsonString
+                or ScopeName.XmlAttributeValue or ScopeName.HtmlAttributeValue or ScopeName.CssPropertyValue => CodeToken.String,
+            ScopeName.Comment or ScopeName.XmlComment or ScopeName.XmlDocComment or ScopeName.XmlDocTag or ScopeName.HtmlComment => CodeToken.Comment,
+            ScopeName.Number or ScopeName.JsonNumber => CodeToken.Number,
+            ScopeName.ClassName or ScopeName.Type or ScopeName.TypeVariable or ScopeName.PowerShellType or ScopeName.NameSpace
+                or ScopeName.Constructor or ScopeName.BuiltinFunction => CodeToken.Type,
+            ScopeName.PreprocessorKeyword or ScopeName.Attribute or ScopeName.PowerShellAttribute => CodeToken.Preprocessor,
+            ScopeName.HtmlElementName or ScopeName.XmlName or ScopeName.CssSelector or ScopeName.JsonKey => CodeToken.Tag,
+            ScopeName.HtmlAttributeName or ScopeName.XmlAttribute or ScopeName.CssPropertyName or ScopeName.PowerShellVariable
+                or ScopeName.PowerShellParameter => CodeToken.Attribute,
+            _ => CodeToken.None,
+        };
     }
 
     internal static int CachedEntries
@@ -62,9 +139,8 @@ internal static class CodeHighlighter
         }
     }
 
-    private static void Remember(Key key, string html)
+    private static void Remember(Key key, object value, int size)
     {
-        var size = key.Code.Length + html.Length;
         if (_recentSize + size > GenerationBudget && _recent.Count > 0)
         {
             _older = _recent;
@@ -72,7 +148,7 @@ internal static class CodeHighlighter
             _recentSize = 0;
         }
 
-        if (_recent.TryAdd(key, html))
+        if (_recent.TryAdd(key, value))
         {
             _recentSize += size;
         }
