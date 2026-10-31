@@ -21,7 +21,7 @@
     <AssemblyName>Memos</AssemblyName>
     <Product>Memos</Product>
     <!-- Keep the executable's displayed version aligned with the MSIX identity. -->
-    <Version>$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\..\Memos (Package)\Package.appxmanifest')), 'Version=&quot;([0-9]+\.[0-9]+\.[0-9]+)\.[0-9]+&quot;').Groups[1].Value)</Version>
+    <Version>$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\..\Memos (Package)\Package.appxmanifest')), 'Version="([0-9]+\.[0-9]+\.[0-9]+)\.[0-9]+"').Groups[1].Value)</Version>
   </PropertyGroup>
 
   <!--
@@ -43,14 +43,14 @@
       Only the Windows App SDK components the app uses are referenced. The Microsoft.WindowsAppSDK
       metapackage would also bring the AI and ML components, which this app must not ship.
     -->
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2705" />
-    <PackageReference Include="Microsoft.WindowsAppSDK.Base" Version="2.0.4" />
-    <PackageReference Include="Microsoft.WindowsAppSDK.DWrite" Version="2.1.0" />
-    <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="2.3.12" />
-    <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="2.1.9" />
-    <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="2.5.1" />
-    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.3.9" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2957" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Base" Version="2.6.4" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.DWrite" Version="2.6.4" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="2.6.4" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="2.6.4" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="2.6.4" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.6.4" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.14" />
   </ItemGroup>
 
   <ItemGroup>

@@ -15,7 +15,7 @@
   <ItemGroup>
     <PackageReference Include="ColorCode.HTML" Version="2.0.15" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-    <PackageReference Include="Markdig" Version="1.4.0" />
+    <PackageReference Include="Markdig" Version="1.5.1" />
   </ItemGroup>
 
 </Project>
