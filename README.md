@@ -68,6 +68,7 @@ Memos/
   Memos.Tests/       Pruebas xUnit de Memos.Core
   Memos.UITests/     Pruebas de interfaz: arrancan la app real y la manejan por UI Automation
 tools/New-BrandAssets.ps1   Genera el icono y todas las imágenes del paquete
+tools/Measure-Startup.ps1   Mide el tiempo de arranque (ventana y primera pestaña)
 docs/ARQUITECTURA.md
 ```
 
@@ -86,6 +87,12 @@ Memos\Memos\bin\x64\Debug\net10.0-windows10.0.26100.0\Memos.exe
 ```
 
 `MemosUnpackaged=true` copia el Windows App SDK junto al ejecutable. Se pueden pasar rutas de archivos como argumentos. La variable de entorno `MEMOS_DATA_DIR` redirige la carpeta de datos (por defecto `%LOCALAPPDATA%\Memos`).
+
+Para medir el arranque en este equipo (ventana y primera pestaña, varias veces y con una carpeta de datos temporal):
+
+```bash
+powershell tools\Measure-Startup.ps1 -Runs 5
+```
 
 ## Pruebas
 

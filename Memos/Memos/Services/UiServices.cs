@@ -14,6 +14,9 @@ public sealed class Localizer : ILocalizer
 {
     private readonly ResourceLoader _loader = new();
 
+    // The language cannot change without restarting the app, so a string never has two values.
+    private readonly Dictionary<string, string> _cache = new(StringComparer.Ordinal);
+
     /// <summary>Available to XAML markup, which cannot receive constructor-injected services.</summary>
     public static Localizer? Instance { get; private set; }
 
@@ -21,15 +24,28 @@ public sealed class Localizer : ILocalizer
 
     public string Get(string key)
     {
+        if (_cache.TryGetValue(key, out var cached))
+        {
+            return cached;
+        }
+
+        string value;
         try
         {
-            var value = _loader.GetString(key);
-            return string.IsNullOrEmpty(value) ? key : value;
+            value = _loader.GetString(key);
         }
         catch (System.Runtime.InteropServices.COMException)
         {
             return key;
         }
+
+        if (string.IsNullOrEmpty(value))
+        {
+            value = key;
+        }
+
+        _cache[key] = value;
+        return value;
     }
 
     public string Format(string key, params object?[] args) => string.Format(Get(key), args);

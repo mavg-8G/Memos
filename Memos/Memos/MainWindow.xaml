@@ -7,10 +7,6 @@
     xmlns:vm="using:Memos.Core.ViewModels"
     Title="Memos">
 
-    <Window.SystemBackdrop>
-        <MicaBackdrop />
-    </Window.SystemBackdrop>
-
     <Grid x:Name="Root"
           AllowDrop="True"
           DragOver="OnDragOver"

@@ -115,6 +115,24 @@ El WebView2 se crea la primera vez que se muestra una vista previa: una sesión 
 
 `HtmlDocumentBuilder` genera el documento HTML completo (CSS incrustado, sin scripts, claro/oscuro con `prefers-color-scheme`). El PDF se imprime desde un WebView2 temporal e invisible (`WebViewPdfExporter`) con `PrintToPdfAsync`, siempre en tema claro.
 
+## Arranque
+
+El arranque solo hace el trabajo que necesita la primera ventana:
+
+- `Program.Main` registra la instancia única y deja en segundo plano la lectura de `settings.json`
+  (`StartupPreload`) y de los argumentos de activación. Antes ambas se hacían en serie en el hilo
+  de interfaz, antes de crear la ventana.
+- La ventana se activa en cuanto existe y los documentos se abren después.
+- El panel de búsqueda en todas las pestañas se construye la primera vez que se muestra.
+- El calentamiento del analizador Markdown espera un segundo, en un hilo del grupo, para no
+  competir con la creación de la primera pestaña.
+- El icono de la ventana se carga cuando la cola de la interfaz queda libre; el ejecutable ya
+  lleva el mismo icono incrustado.
+
+La publicación Release compila con ReadyToRun (`PublishReadyToRun` en `Memos.csproj`), de modo que
+el arranque no paga la compilación JIT de la aplicación. `tools/Measure-Startup.ps1` mide el tiempo
+hasta la ventana y hasta la primera pestaña.
+
 ## Persistencia
 
 Archivos JSON en `%LOCALAPPDATA%\Memos` (en el paquete MSIX, Windows los redirige al almacén de la aplicación, por lo que desinstalar los elimina):

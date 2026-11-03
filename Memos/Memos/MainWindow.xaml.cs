@@ -31,6 +31,7 @@ public sealed partial class MainWindow : Window
     private DocumentViewModel? _observedDocument;
     private bool _observedRichText;
     private SettingsPage? _settingsPage;
+    private GlobalSearchPanel? _globalSearchPanel;
     private bool _draggingTab;
     private bool _syncingSelection;
     private bool _closeConfirmed;
@@ -53,13 +54,18 @@ public sealed partial class MainWindow : Window
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(TitleBarDragRegion);
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
-        AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "Memos.ico"));
         RestoreWindowPlacement();
+
+        // Loading the icon file costs a few milliseconds; the executable already carries the same
+        // icon, so doing it once the window is up is invisible and keeps it off the start-up path.
+        var icon = Path.Combine(AppContext.BaseDirectory, "Assets", "Memos.ico");
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => AppWindow.SetIcon(icon));
 
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         ViewModel.Documents.CollectionChanged += OnDocumentsChanged;
         ViewModel.RecentFiles.CollectionChanged += (_, _) => BuildRecentMenu();
         ViewModel.Settings.PropertyChanged += OnSettingsChanged;
+        ViewModel.GlobalSearch.PropertyChanged += OnGlobalSearchChanged;
         ViewModel.CloseWindowRequested += (_, _) =>
         {
             _closeConfirmed = true;
@@ -69,7 +75,6 @@ public sealed partial class MainWindow : Window
         AppWindow.Closing += OnWindowClosing;
         Activated += OnActivated;
 
-        GlobalSearchHost.Children.Add(new GlobalSearchPanel(ViewModel.GlobalSearch));
         BuildHeadingMenus();
         BuildRecentMenu();
         OnActiveDocumentChanged();
@@ -189,6 +194,20 @@ public sealed partial class MainWindow : Window
         if (e.PropertyName == nameof(AppSettings.ShowRecentFiles))
         {
             BuildRecentMenu();
+        }
+    }
+
+    /// <summary>
+    /// The panel for find and replace across tabs is built the first time it is shown. Creating
+    /// it eagerly used to add its XAML to every start-up for a feature most sessions never open.
+    /// </summary>
+    private void OnGlobalSearchChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(GlobalSearchViewModel.IsVisible) &&
+            ViewModel.GlobalSearch.IsVisible && _globalSearchPanel is null)
+        {
+            _globalSearchPanel = new GlobalSearchPanel(ViewModel.GlobalSearch);
+            GlobalSearchHost.Children.Add(_globalSearchPanel);
         }
     }
 

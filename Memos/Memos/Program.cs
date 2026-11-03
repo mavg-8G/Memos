@@ -24,7 +24,6 @@ public static partial class Program
     {
         WinRT.ComWrappersSupport.InitializeComWrappers();
 
-        var activation = AppInstance.GetCurrent().GetActivatedEventArgs();
         // A redirected data folder (portable use, automated tests) is a separate installation as far
         // as single-instancing goes, so it never hands its files to the user's normal window.
         var dataDirectory = Environment.GetEnvironmentVariable("MEMOS_DATA_DIR");
@@ -34,20 +33,43 @@ public static partial class Program
         var main = AppInstance.FindOrRegisterForKey(key);
         if (!main.IsCurrent)
         {
+            var activation = AppInstance.GetCurrent().GetActivatedEventArgs();
             RedirectTo(main, activation);
             return 0;
         }
 
+        // Reading the settings file overlaps with the window being created; the UI thread only
+        // picks up the finished object.
+        StartupPreload.Begin();
+
+        // Reading the activation arguments also costs tens of milliseconds, and the window does not
+        // need them until it opens its first document: read them while XAML initializes instead of
+        // before it.
+        var activationTask = Task.Run(() => AppInstance.GetCurrent().GetActivatedEventArgs());
+
         main.Activated += (_, args) => FilesReceived?.Invoke(GetPaths(args, isRedirected: true));
-        var startupPaths = GetPaths(activation, isRedirected: false);
 
         Application.Start(p =>
         {
             SynchronizationContext.SetSynchronizationContext(
                 new DispatcherQueueSynchronizationContext(DispatcherQueue.GetForCurrentThread()));
-            _ = new App(startupPaths);
+            _ = new App(() => GetStartupPaths(activationTask));
         });
         return 0;
+    }
+
+    /// <summary>The files this launch was asked to open, from the activation read in the background.</summary>
+    private static IReadOnlyList<string> GetStartupPaths(Task<AppActivationArguments> activation)
+    {
+        try
+        {
+            return GetPaths(activation.GetAwaiter().GetResult(), isRedirected: false);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            // The activation could not be read; the command line is still a usable fallback.
+            return Environment.GetCommandLineArgs().Skip(1).ToList();
+        }
     }
 
     private static void RedirectTo(AppInstance main, AppActivationArguments activation)

@@ -9,10 +9,10 @@ namespace Memos;
 
 public partial class App : Application
 {
-    private readonly IReadOnlyList<string> _startupPaths;
+    private readonly Func<IReadOnlyList<string>> _startupPaths;
     private MainWindow? _window;
 
-    public App(IReadOnlyList<string> startupPaths)
+    public App(Func<IReadOnlyList<string>> startupPaths)
     {
         _startupPaths = startupPaths;
         Services = ConfigureServices();
@@ -59,23 +59,29 @@ public partial class App : Application
         _window = Services.GetRequiredService<MainWindow>();
         Program.FilesReceived += paths => _window.DispatcherQueue.TryEnqueue(() => _window.OpenFromAnotherInstance(paths));
         _window.Activate();
-        await _window.ViewModel.InitializeAsync(_startupPaths);
+        await _window.ViewModel.InitializeAsync(await Task.Run(_startupPaths));
 
-        // The first Markdown analysis of a session is many times slower than the rest. It is paid
-        // here, in the background, instead of when the first document or preview is opened.
-        _ = Task.Run(MarkdownService.WarmUp);
+        QueueMarkdownWarmUp();
     }
+
+    /// <summary>
+    /// The first Markdown analysis of a session is many times slower than the rest. It is paid on
+    /// a background thread, but only after the window has had time to show its first document:
+    /// doing it before that competes with start-up for CPU and makes the window appear later.
+    /// </summary>
+    private static void QueueMarkdownWarmUp() => _ = Task.Run(async () =>
+    {
+        await Task.Delay(TimeSpan.FromSeconds(1));
+        MarkdownService.WarmUp();
+    });
 
     private static ServiceProvider ConfigureServices()
     {
         // MEMOS_DATA_DIR redirects settings and session data, for portable use and for testing.
-        var dataDirectory = Environment.GetEnvironmentVariable("MEMOS_DATA_DIR") is { Length: > 0 } custom
-            ? Path.GetFullPath(custom)
-            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Memos");
-
+        // The settings are read in the background from the first line of the process (StartupPreload).
         var services = new ServiceCollection();
-        services.AddSingleton<IAppPaths>(new AppPaths(dataDirectory));
-        services.AddSingleton<ISettingsService, JsonSettingsService>();
+        services.AddSingleton<IAppPaths>(new AppPaths(StartupPreload.DataDirectory));
+        services.AddSingleton<ISettingsService>(StartupPreload.TakeSettings());
         services.AddSingleton<IFileService, FileService>();
         services.AddSingleton<IRecentFilesService, RecentFilesService>();
         services.AddSingleton<ISessionService, SessionService>();
