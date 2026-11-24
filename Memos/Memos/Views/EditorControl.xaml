@@ -13,7 +13,7 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid>
+    <Grid Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="*" />
@@ -56,15 +56,26 @@
                      SelectionFlyout="{x:Null}"
                      SelectionHighlightColorWhenNotFocused="{ThemeResource AccentFillColorTertiaryBrush}">
             <RichEditBox.Resources>
-                <!-- A flat editing surface: no box, no focus underline; the window material shows through. -->
-                <SolidColorBrush x:Key="TextControlBackground" Color="Transparent" />
-                <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="Transparent" />
-                <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="Transparent" />
-                <SolidColorBrush x:Key="TextControlBorderBrush" Color="Transparent" />
-                <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="Transparent" />
-                <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="Transparent" />
-                <Thickness x:Key="TextControlBorderThemeThickness">0</Thickness>
-                <Thickness x:Key="TextControlBorderThemeThicknessFocused">0</Thickness>
+                <!-- RichEdit's inverted caret needs an opaque surface to remain visible. -->
+                <ResourceDictionary>
+                    <ResourceDictionary.ThemeDictionaries>
+                        <ResourceDictionary x:Key="Default">
+                            <SolidColorBrush x:Key="TextControlBackground" Color="{ThemeResource SolidBackgroundFillColorBase}" />
+                            <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="{ThemeResource SolidBackgroundFillColorBase}" />
+                            <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="{ThemeResource SolidBackgroundFillColorBase}" />
+                        </ResourceDictionary>
+                        <ResourceDictionary x:Key="HighContrast">
+                            <SolidColorBrush x:Key="TextControlBackground" Color="{ThemeResource SystemColorWindowColor}" />
+                            <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="{ThemeResource SystemColorWindowColor}" />
+                            <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="{ThemeResource SystemColorWindowColor}" />
+                        </ResourceDictionary>
+                    </ResourceDictionary.ThemeDictionaries>
+                    <SolidColorBrush x:Key="TextControlBorderBrush" Color="Transparent" />
+                    <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="Transparent" />
+                    <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="Transparent" />
+                    <Thickness x:Key="TextControlBorderThemeThickness">0</Thickness>
+                    <Thickness x:Key="TextControlBorderThemeThicknessFocused">0</Thickness>
+                </ResourceDictionary>
             </RichEditBox.Resources>
             <RichEditBox.ContextFlyout>
                 <MenuFlyout>

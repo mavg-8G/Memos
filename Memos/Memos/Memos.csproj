@@ -44,13 +44,13 @@
       metapackage would also bring the AI and ML components, which this app must not ship.
     -->
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2957" />
-    <PackageReference Include="Microsoft.WindowsAppSDK.Base" Version="2.6.4" />
-    <PackageReference Include="Microsoft.WindowsAppSDK.DWrite" Version="2.6.4" />
-    <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="2.6.4" />
-    <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="2.6.4" />
-    <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="2.6.4" />
-    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.6.4" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.14" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Base" Version="2.7.0" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.DWrite" Version="2.7.0" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="2.7.0" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="2.7.0" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="2.7.0" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.7.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="11.0.0" />
   </ItemGroup>
 
   <ItemGroup>
