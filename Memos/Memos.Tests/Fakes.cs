@@ -129,9 +129,7 @@ public sealed class FakePrintService : IPrintService
 {
     public string? Title { get; private set; }
 
-    public IReadOnlyList<Memos.Core.Helpers.RichTextRun>? Runs { get; private set; }
-
-    public bool Monospaced { get; private set; }
+    public string? Text { get; private set; }
 
     public IReadOnlyList<PrintBlock>? Blocks { get; private set; }
 
@@ -139,7 +137,7 @@ public sealed class FakePrintService : IPrintService
 
     public Exception? Error { get; set; }
 
-    public Task PrintTextAsync(string title, IReadOnlyList<Memos.Core.Helpers.RichTextRun> runs, bool monospaced)
+    public Task PrintTextAsync(string title, string text)
     {
         if (Error is not null)
         {
@@ -147,8 +145,7 @@ public sealed class FakePrintService : IPrintService
         }
 
         Title = title;
-        Runs = runs;
-        Monospaced = monospaced;
+        Text = text;
         return Task.CompletedTask;
     }
 
@@ -163,94 +160,6 @@ public sealed class FakePrintService : IPrintService
         Blocks = blocks;
         BaseDirectory = baseDirectory;
         return Task.CompletedTask;
-    }
-}
-
-/// <summary>
-/// Stands in for the editing control of a rich-text document. Like the real one, it rewrites the
-/// RTF it is given in its own way and keeps the undo history to itself.
-/// </summary>
-public sealed class FakeRichEditor : IRichEditorSurface
-{
-    private readonly DocumentViewModel _document;
-
-    public FakeRichEditor(DocumentViewModel document)
-    {
-        _document = document;
-        document.Editor = this;
-        LoadRichText(document.RichText);
-    }
-
-    /// <summary>How the control would write the same document.</summary>
-    public static string Normalize(string rtf) => rtf.Replace(@"{\rtf1", @"{\rtf1\fbidis").TrimEnd() + "\r\n";
-
-    public string Rtf { get; private set; } = "";
-
-    public List<RichStyle> Toggled { get; } = [];
-
-    public int Undos { get; private set; }
-
-    public int Redos { get; private set; }
-
-    public bool CanUndoRich { get; set; }
-
-    public bool CanRedoRich { get; set; }
-
-    public void LoadRichText(string rtf)
-    {
-        Rtf = Normalize(rtf);
-        _document.OnEditorRichTextLoaded(Memos.Core.Helpers.RichTextCodec.ToPlainText(rtf), Rtf);
-    }
-
-    /// <summary>The user changed the document: new content, new formatting, or both.</summary>
-    public void Edit(string rtf)
-    {
-        Rtf = Normalize(rtf);
-        CanUndoRich = true;
-        CanRedoRich = false;
-        _document.OnEditorRichTextChanged(Memos.Core.Helpers.RichTextCodec.ToPlainText(rtf), Rtf);
-    }
-
-    public void ToggleRichStyle(RichStyle style) => Toggled.Add(style);
-
-    public void UndoRich()
-    {
-        Undos++;
-        CanUndoRich = false;
-        CanRedoRich = true;
-    }
-
-    public void RedoRich()
-    {
-        Redos++;
-        CanUndoRich = true;
-        CanRedoRich = false;
-    }
-
-    public void ApplyEdit(TextEdit edit) => Edit(Memos.Core.Helpers.RichTextCodec.FromPlainText(edit.Apply(_document.Text)));
-
-    public void Select(int start, int length)
-    {
-    }
-
-    public void Focus()
-    {
-    }
-
-    public void Cut()
-    {
-    }
-
-    public void Copy()
-    {
-    }
-
-    public void Paste()
-    {
-    }
-
-    public void SelectAll()
-    {
     }
 }
 

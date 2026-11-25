@@ -60,7 +60,7 @@ public class WindowTests
 
         // The Markdown tab is active: its tools are there and the file's LF endings were detected.
         Assert.NotNull(app.FindByName("Format", ControlType.MenuItem));
-        Assert.Null(app.TryFind("FormattingButton"));
+        Assert.NotNull(app.TryFind("FormattingButton"));
         WaitForText(app, "LineEndingButton", "LF");
 
         app.SelectTab("notas.txt");
@@ -269,136 +269,38 @@ public class WindowTests
         MemosApp.Eventually(() => !File.Exists(logPath), "the log file to be deleted");
     }
 
-    private const string SampleRtf =
-        @"{\rtf1\ansi\ansicpg1252\deff0{\fonttbl{\f0 Times New Roman;}}\f0\fs28 \b negrita\b0  normal\par}";
-
     [Theory]
     [InlineData("Light")]
     [InlineData("Dark")]
-    public void An_rtf_file_opens_as_rich_text_and_is_not_modified_by_being_shown(string theme)
+    public void Formatting_edits_and_saves_the_same_text_file(string theme)
     {
         using var app = MemosApp.Launch(
-            docs => [MemosApp.WriteDoc(docs, "carta.rtf", SampleRtf)],
-            $$"""{ "Language": "en-US", "Theme": "{{theme}}" }""");
+            docs => [MemosApp.WriteDoc(docs, "nota.txt", "uno")],
+            $$"""{ "Language": "en-US", "Theme": "{{theme}}", "WindowWidth": 1200, "WindowHeight": 760 }""");
 
-        Assert.Equal(["carta.rtf"], app.TabNames());
-        WaitForText(app, "CharactersText", "14 characters");
-        WaitForText(app, "WordsText", "2 words");
+        app.Click("FormattingButton");
+        app.FindByName("Format", ControlType.MenuItem);
+        Assert.Equal(["nota.txt"], app.TabNames());
+        Assert.NotNull(app.TryFind("EncodingButton"));
 
-        // Encoding, line ending and zoom belong to plain text; a rich document has its own formatting tools.
-        MemosApp.Eventually(() => app.TryFind("EncodingButton") is null && app.TryFind("ZoomButton") is null, "the plain-text status buttons to hide");
-        Assert.NotNull(app.FindByName("Format", ControlType.MenuItem));
-        Thread.Sleep(1000);
-
-        // Nothing was edited, so closing must not ask and the file must be byte for byte the same.
-        app.RequestClose();
-        Assert.True(app.WaitForExit(TimeSpan.FromSeconds(15)), "An untouched RTF file should close without asking to save.");
-        Assert.Equal(SampleRtf, File.ReadAllText(app.Doc("carta.rtf")));
-    }
-
-    [Fact]
-    public void Editing_rich_text_keeps_its_fonts_and_styles_and_tab_undo_and_redo_work()
-    {
-        using var app = MemosApp.Launch(docs => [MemosApp.WriteDoc(docs, "carta.rtf", SampleRtf)]);
-        WaitForText(app, "CharactersText", "14 characters");
-
-        // Tab types a tab instead of moving the focus out of the editor.
-        app.Press(VkTab);
-        WaitForText(app, "CharactersText", "15 characters");
-        app.Type("x");
-        WaitForText(app, "CharactersText", "16 characters");
-
-        app.Menu("Edit", "Undo");
-        MemosApp.Eventually(() => app.Text("CharactersText") != "16 characters", "undo to take the typing back");
-        app.Menu("Edit", "Redo");
-        WaitForText(app, "CharactersText", "16 characters");
-
-        app.Menu("Format", "Underline");
+        app.Menu("Edit", "Select all");
+        app.Menu("Format", "Bold");
         app.Menu("File", "Save");
-
-        var path = app.Doc("carta.rtf");
-        MemosApp.Eventually(() => File.ReadAllText(path).Contains(@"\tab"), "the document to be saved");
-        var saved = File.ReadAllText(path);
-        Assert.StartsWith(@"{\rtf1", saved);
-        Assert.Contains("Times New Roman", saved);
-        Assert.Contains(@"negrita\b0", saved);
-        Assert.DoesNotContain("Cascadia", saved);
-        Assert.DoesNotContain('\0', saved);
+        var path = app.Doc("nota.txt");
+        MemosApp.Eventually(() =>
+        {
+            try { return File.ReadAllText(path) == "**uno**"; }
+            catch (IOException) { return false; }
+        }, "Markdown to be saved in the original file");
         Assert.Single(Directory.GetFiles(Path.GetDirectoryName(path)!));
 
-        // Saved means saved: closing does not ask again.
-        app.RequestClose();
-        Assert.True(app.WaitForExit(TimeSpan.FromSeconds(15)));
-    }
-
-    [Fact]
-    public void A_new_rich_document_can_be_formatted_and_asks_before_closing()
-    {
-        using var app = MemosApp.Launch();
-
-        app.Menu("File", "New rich text document (RTF)");
-        MemosApp.Eventually(() => app.TabNames().Length == 2 && app.TryFind("EncodingButton") is null, "the rich document to open in a new tab");
-
-        app.Menu("Format", "Bold");
-        app.Type("hola");
-        WaitForText(app, "CharactersText", "4 characters");
-
-        app.RequestClose();
-        MemosApp.Invoke(app.FindByName("Don't save", ControlType.Button));
-        Assert.True(app.WaitForExit(TimeSpan.FromSeconds(15)));
-    }
-
-    [Theory]
-    [InlineData("Light")]
-    [InlineData("Dark")]
-    public void Formatting_is_a_switch_of_the_text_editor_that_can_be_turned_off_again(string theme)
-    {
-        using var app = MemosApp.Launch(
-            docs => [MemosApp.WriteDoc(docs, "nota.txt", "uno\r\ndos")],
-            $$"""{ "Language": "en-US", "Theme": "{{theme}}", "WindowWidth": 1200, "WindowHeight": 760 }""");
-        WaitForText(app, "CharactersText", "6 characters");
-
-        // On: the same tab becomes a rich document, without the plain-text status buttons.
         app.Click("FormattingButton");
-        MemosApp.Eventually(() => app.TryFind("EncodingButton") is null, "the document to become rich text");
-        Assert.Equal(["nota"], app.TabNames());
-
-        // Off again with nothing formatted: there is nothing to lose, so nothing is asked.
-        app.Click("FormattingButton");
-        MemosApp.Eventually(() => app.TryFind("EncodingButton") is not null, "the document to become plain text again");
-        WaitForText(app, "CharactersText", "6 characters");
-
-        app.Click("FormattingButton");
-        MemosApp.Eventually(() => app.TryFind("EncodingButton") is null, "the document to become rich text");
-        app.Menu("Format", "Bold");
-        app.Type("N");
-        WaitForText(app, "CharactersText", "7 characters");
-
-        // Now there is formatting: leaving asks, and cancelling changes nothing.
-        app.Click("FormattingButton");
-        MemosApp.Invoke(app.FindByName("Cancel", ControlType.Button));
-        Thread.Sleep(700);
-        Assert.Null(app.TryFind("EncodingButton"));
-
-        app.Click("FormattingButton");
-        MemosApp.Invoke(app.FindByName("Remove formatting", ControlType.Button));
-        MemosApp.Eventually(() => app.TryFind("EncodingButton") is not null, "the document to become plain text again");
-        WaitForText(app, "CharactersText", "7 characters");
-
-        // It is a plain-text editor again, with its own undo history.
-        app.Type("Z");
-        WaitForText(app, "CharactersText", "8 characters");
-        app.Menu("Edit", "Undo");
-        WaitForText(app, "CharactersText", "7 characters");
-
-        Assert.False(app.HasExited);
-        Assert.Equal("uno\r\ndos", File.ReadAllText(app.Doc("nota.txt")));
+        Assert.Equal(["nota.txt"], app.TabNames());
     }
 
     [Theory]
     [InlineData("nota.txt", "uno\r\ndos")]
     [InlineData("nota.md", "# Título\n\ntexto")]
-    [InlineData("nota.rtf", SampleRtf)]
     public void Print_opens_the_print_dialog_of_windows_and_closing_it_leaves_nothing_behind(string name, string content)
     {
         using var app = MemosApp.Launch(docs => [MemosApp.WriteDoc(docs, name, content)]);

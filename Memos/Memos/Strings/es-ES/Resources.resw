@@ -59,7 +59,6 @@
   <data name="Filter_Supported" xml:space="preserve"><value>Archivos de texto y Markdown</value></data>
   <data name="Filter_Text" xml:space="preserve"><value>Archivos de texto</value></data>
   <data name="Filter_Markdown" xml:space="preserve"><value>Markdown</value></data>
-  <data name="Filter_RichText" xml:space="preserve"><value>Texto enriquecido RTF</value></data>
   <data name="Filter_All" xml:space="preserve"><value>Todos los archivos</value></data>
   <data name="Filter_Images" xml:space="preserve"><value>Imágenes</value></data>
   <data name="Status_Position" xml:space="preserve"><value>Lín. {0}, col. {1}</value></data>
@@ -110,9 +109,8 @@
   <data name="Menu_Indentation" xml:space="preserve"><value>Sangría</value></data>
   <data name="Cmd_NewText" xml:space="preserve"><value>Nuevo documento de texto</value></data>
   <data name="Cmd_NewMarkdown" xml:space="preserve"><value>Nuevo documento Markdown</value></data>
-  <data name="Cmd_NewRichText" xml:space="preserve"><value>Nuevo documento con formato (RTF)</value></data>
   <data name="Cmd_Print" xml:space="preserve"><value>Imprimir…</value></data>
-  <data name="Msg_RtfExtension" xml:space="preserve"><value>Los documentos con formato deben guardarse como archivos .rtf.</value></data>
+  <data name="Msg_RtfUnsupported" xml:space="preserve"><value>Memos admite documentos de texto y Markdown. Los archivos RTF ya no son compatibles.</value></data>
   <data name="Cmd_Open" xml:space="preserve"><value>Abrir…</value></data>
   <data name="Cmd_Recent" xml:space="preserve"><value>Recientes</value></data>
   <data name="Cmd_Save" xml:space="preserve"><value>Guardar</value></data>
@@ -161,7 +159,6 @@
   <data name="Cmd_HeadingNone" xml:space="preserve"><value>Texto normal</value></data>
   <data name="Cmd_Bold" xml:space="preserve"><value>Negrita</value></data>
   <data name="Cmd_Italic" xml:space="preserve"><value>Cursiva</value></data>
-  <data name="Cmd_Underline" xml:space="preserve"><value>Subrayado</value></data>
   <data name="Cmd_Strikethrough" xml:space="preserve"><value>Tachado</value></data>
   <data name="Cmd_InlineCode" xml:space="preserve"><value>Código en línea</value></data>
   <data name="Cmd_Link" xml:space="preserve"><value>Enlace…</value></data>
@@ -187,11 +184,8 @@
   <data name="Workspace_Name" xml:space="preserve"><value>Tipo de editor</value></data>
   <data name="Workspace_Text" xml:space="preserve"><value>Texto</value></data>
   <data name="Workspace_Markdown" xml:space="preserve"><value>Markdown</value></data>
-  <data name="Cmd_Formatting" xml:space="preserve"><value>Formato (RTF)</value></data>
-  <data name="Tip_Formatting" xml:space="preserve"><value>Formato: negrita, cursiva y subrayado; se guarda como .rtf</value></data>
-  <data name="Msg_DropFormatting_Title" xml:space="preserve"><value>¿Quitar el formato?</value></data>
-  <data name="Msg_DropFormatting" xml:space="preserve"><value>El documento pasará a ser texto sin formato. Se perderán sus fuentes, tamaños, colores y estilos; el texto se conserva. El archivo .rtf guardado no se modifica.</value></data>
-  <data name="Btn_DropFormatting" xml:space="preserve"><value>Quitar formato</value></data>
+  <data name="Cmd_Formatting" xml:space="preserve"><value>Formato Markdown</value></data>
+  <data name="Tip_Formatting" xml:space="preserve"><value>Edita Markdown con una vista previa en vivo</value></data>
   <data name="Recent_Empty" xml:space="preserve"><value>No hay archivos recientes</value></data>
   <data name="Recent_Clear" xml:space="preserve"><value>Borrar la lista</value></data>
   <data name="Drop_Open" xml:space="preserve"><value>Abrir en una pestaña</value></data>

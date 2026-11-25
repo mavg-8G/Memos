@@ -1,10 +1,8 @@
-using Memos.Core.Helpers;
 using Memos.Core.Markdown;
 using Memos.Core.Models;
 using Memos.Core.Services;
 using Microsoft.UI;
 using Microsoft.UI.Dispatching;
-using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
@@ -34,11 +32,10 @@ public sealed class WindowsPrintService(WindowContext context, ISettingsService 
 
     private Session? _session;
 
-    public Task PrintTextAsync(string title, IReadOnlyList<RichTextRun> runs, bool monospaced)
+    public Task PrintTextAsync(string title, string text)
     {
-        var family = monospaced ? settings.Current.FontFamily + ", " + MarkdownLayout.CodeFont : "Segoe UI";
-        var tabSize = monospaced ? settings.Current.TabSize : 0;
-        return ShowAsync(title, (host, page) => Flow(host, page, CreateText(runs, family, tabSize)));
+        var family = settings.Current.FontFamily + ", " + MarkdownLayout.CodeFont;
+        return ShowAsync(title, (host, page) => Flow(host, page, CreateText(text, family, settings.Current.TabSize)));
     }
 
     public async Task PrintMarkdownAsync(string title, IReadOnlyList<PrintBlock> blocks, string? baseDirectory)
@@ -253,19 +250,11 @@ public sealed class WindowsPrintService(WindowContext context, ISettingsService 
 
     // ---- Text and rich text ---------------------------------------------------------------------------
 
-    private static RichTextBlock CreateText(IReadOnlyList<RichTextRun> runs, string fontFamily, int tabSize)
+    private static RichTextBlock CreateText(string content, string fontFamily, int tabSize)
     {
         var paragraph = new Paragraph();
         var column = 0;
-        foreach (var run in runs)
-        {
-            var inline = new Run { Text = tabSize > 0 ? ExpandTabs(run.Text, tabSize, ref column) : run.Text };
-            if (run.Bold) inline.FontWeight = FontWeights.Bold;
-            if (run.Italic) inline.FontStyle = Windows.UI.Text.FontStyle.Italic;
-            if (run.Underline) inline.TextDecorations |= Windows.UI.Text.TextDecorations.Underline;
-            if (run.Strikethrough) inline.TextDecorations |= Windows.UI.Text.TextDecorations.Strikethrough;
-            paragraph.Inlines.Add(inline);
-        }
+        paragraph.Inlines.Add(new Run { Text = ExpandTabs(content, tabSize, ref column) });
 
         var text = new RichTextBlock { FontFamily = new FontFamily(fontFamily), FontSize = TextFontSize };
         text.Blocks.Add(paragraph);

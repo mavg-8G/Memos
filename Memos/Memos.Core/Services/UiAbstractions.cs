@@ -1,4 +1,3 @@
-using Memos.Core.Helpers;
 using Memos.Core.Markdown;
 using Memos.Core.Models;
 
@@ -55,8 +54,8 @@ public interface IPdfExporter
 /// <summary>Printing through the print dialog of Windows. Both calls return once the dialog is showing.</summary>
 public interface IPrintService
 {
-    /// <summary>Prints text with its character styles; paragraphs end with '\n'.</summary>
-    Task PrintTextAsync(string title, IReadOnlyList<RichTextRun> runs, bool monospaced);
+    /// <summary>Prints plain text in the editor font; paragraphs end with '\n'.</summary>
+    Task PrintTextAsync(string title, string text);
 
     /// <summary>Prints a Markdown document. Relative images resolve against <paramref name="baseDirectory"/>.</summary>
     Task PrintMarkdownAsync(string title, IReadOnlyList<PrintBlock> blocks, string? baseDirectory);
@@ -83,15 +82,3 @@ public interface IEditorSurface
 
     void SelectAll();
 }
-
-public interface IRichEditorSurface : IEditorSurface
-{
-    bool CanUndoRich { get; }
-    bool CanRedoRich { get; }
-    void LoadRichText(string rtf);
-    void ToggleRichStyle(RichStyle style);
-    void UndoRich();
-    void RedoRich();
-}
-
-public enum RichStyle { Bold, Italic, Underline, Strikethrough }

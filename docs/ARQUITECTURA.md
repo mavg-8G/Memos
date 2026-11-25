@@ -43,7 +43,7 @@ Toda modificación recorre el mismo camino:
 
 `UndoHistory` guarda reemplazos (posición, texto quitado, texto insertado). La escritura consecutiva se fusiona por palabras, los borrados consecutivos también, y los comandos son siempre un paso propio. El estado «modificado» sale de comparar el paso actual con el paso guardado, así que deshacer hasta el punto de guardado limpia el indicador.
 
-En texto plano y Markdown el historial es propio (el del control está desactivado) por una razón concreta: el resaltado de sintaxis y el de búsqueda se aplican como formato de caracteres en el RichEditBox, y con el historial nativo cada recoloreado sería un paso de «deshacer». Los documentos RTF usan el historial nativo para conservar los cambios de formato.
+En texto plano y Markdown el historial es propio (el del control está desactivado) por una razón concreta: el resaltado de sintaxis y el de búsqueda se aplican como formato de caracteres en el RichEditBox, y con el historial nativo cada recoloreado sería un paso de «deshacer».
 
 ## El control de edición
 
@@ -53,17 +53,9 @@ En texto plano y Markdown el historial es propio (el del control está desactiva
 - canal de números de línea dibujado aparte, posicionado con `ITextRange.GetRect` (búsqueda binaria de la primera línea visible, así el coste no depende del tamaño del documento);
 - `ApplySyntaxRuns` y `ApplySearchHighlights` solo tocan formato, nunca texto.
 
-En RTF el control carga y guarda el flujo RTF, admite pegar con formato y usa el historial nativo (de él salen «deshacer» y «rehacer»). El ViewModel conserva el RTF junto con el texto visible para búsqueda y estadísticas. El guardado de sesión conserva el flujo RTF. Tres detalles que no son evidentes:
+El botón de formato habilita Markdown y su vista dividida en el documento activo. El editor y la vista previa comparten el mismo texto fuente. El historial, la posición del cursor y el archivo asociado pertenecen a la misma pestaña.
 
-- El control reescribe el RTF a su manera. Lo que devuelve justo después de cargar pasa a ser la referencia de «sin cambios» (`OnEditorRichTextLoaded`); si no, todo archivo parecería modificado al abrirlo.
-- Al entrar en la ventana, el RichEditBox aplica su propia fuente a todo lo que contiene. Por eso el RTF se carga después de `Loaded`, y en estos documentos no se fijan fuente ni tamaño del control (tampoco el zoom).
-- El color «automático» del RTF es negro. El editor RTF fuerza el tema claro sobre fondo blanco para que el texto se lea con el tema oscuro y para que ningún color del tema acabe escrito en el archivo.
-
-Sin control (pestañas aún no mostradas, pruebas), `RichTextCodec` lee del RTF el texto y los cuatro estilos; es también lo que usa la impresión.
-
-**Formato como interruptor.** Texto sin formato y RTF comparten el área de trabajo «Texto»; el selector solo distingue Texto y Markdown. `ToggleFormattingCommand` convierte en los dos sentidos (`ConvertToRichText` / `ConvertToPlainText`): el texto se conserva y el documento se separa de su archivo, porque el otro formato no puede escribirse en él. Al salir de RTF se pregunta solo si hay formato que perder (`HasRichFormatting`: el RTF ya no es el que resultó de convertir el texto). La vuelta a texto plano no reutiliza el control: cargar RTF sustituye los valores por defecto del RichEditBox (fuentes, color automático, formato de párrafo) y nada los restituye, así que `MainWindow.ReplaceView` crea una vista nueva para ese documento.
-
-**Imprimir.** `WindowsPrintService` usa el diálogo de impresión de Windows (`PrintManagerInterop` + `PrintDocument` de XAML); la app no abre ninguna ventana propia. El texto y el RTF se maquetan como texto nativo: un `RichTextBlock` con las series de `RichTextCodec` y tantos `RichTextBlockOverflow` como páginas hagan falta, repaginado cada vez que el diálogo cambia papel u orientación. Las páginas viven en el panel oculto de la ventana porque el texto solo se mide dentro de un árbol visual.
+**Imprimir.** `WindowsPrintService` usa el diálogo de impresión de Windows (`PrintManagerInterop` y `PrintDocument` de XAML). El texto se maqueta con un `RichTextBlock` y tantos `RichTextBlockOverflow` como páginas hagan falta. Las páginas viven en un panel oculto porque XAML solo mide el texto dentro del árbol visual.
 
 Markdown se imprime igual, sin WebView2. `MarkdownPrintBuilder` (núcleo, con la misma canalización de Markdig que la vista previa) convierte el documento en una lista plana de `PrintBlock`: cada bloque dice su tipo, su nivel de lista y de cita y, si abre un elemento de lista, su marcador. `MarkdownLayout` los convierte en párrafos (títulos, sangría francesa para los marcadores, código en fuente monoespaciada) y `Paginator` llena las páginas. Lo que no es texto —filas de tabla, reglas, imágenes que ocupan un párrafo— se coloca entero y fuera del flujo de texto: `RichTextBlock` no cuenta la altura de un `InlineUIContainer` al decidir dónde acaba la página, y dentro del flujo esas piezas se recortaban o desaparecían al final de la hoja. Las imágenes se decodifican antes de abrir el diálogo, porque sin su tamaño no se puede paginar.
 

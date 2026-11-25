@@ -1,6 +1,6 @@
 # Memos
 
-Editor de texto, Markdown y RTF para Windows 11, nativo (C#, .NET 10, WinUI 3 / Windows App SDK). Una alternativa moderna al Bloc de notas: ligera, con pestañas, sin conexión y **sin inteligencia artificial, telemetría, cuentas ni publicidad**.
+Editor de texto y Markdown para Windows 11, nativo (C#, .NET 10, WinUI 3 / Windows App SDK). Una alternativa moderna al Bloc de notas: ligera, con pestañas, sin conexión y **sin inteligencia artificial, telemetría, cuentas ni publicidad**.
 
 ## Funcionalidades
 
@@ -24,15 +24,13 @@ Editor de texto, Markdown y RTF para Windows 11, nativo (C#, .NET 10, WinUI 3 / 
 - Duplicar, eliminar y mover líneas; MAYÚSCULAS/minúsculas; quitar espacios finales; aumentar/reducir sangría; convertir sangría entre espacios y tabulaciones.
 - Deshacer/rehacer por pasos (la escritura se agrupa por palabras).
 - Barra de estado: línea y columna (por grafemas), caracteres, palabras, modo de inserción, codificación, salto de línea y zoom.
-- Fuente, tamaño y zoom son **preferencias visuales**: un `.txt` nunca recibe formato ni marcado.
+- Fuente, tamaño y zoom son **preferencias visuales**: cambiar estas preferencias no altera el contenido del archivo.
 
-**Texto enriquecido e impresión**
+**Formato e impresión**
 
-- El formato es un interruptor del editor de texto (botón «Formato» de la barra o Formato → Formato (RTF)), no un tipo de editor aparte: al activarlo la misma pestaña pasa a ser un documento con formato que se guarda como `.rtf`; al desactivarlo vuelve a ser texto sin formato. El archivo original queda intacto en ambos sentidos y se pide un nombre al guardar.
-- Quitar el formato, o pasar un documento con formato a Markdown, conserva el texto y descarta fuentes, colores y estilos; si hay algo que perder se pide confirmación antes.
-- Negrita, cursiva, subrayado y tachado aplicados a la selección; los cambios sobreviven al cierre y a la recuperación de sesión.
-- Un documento RTF se muestra como una página (texto oscuro sobre blanco) también con el tema oscuro, y conserva las fuentes, tamaños y colores que traiga el archivo: abrirlo no lo modifica.
-- Archivo → Imprimir (`Ctrl+P`) abre el diálogo de impresión de Windows, con su vista previa y sus opciones de impresora, papel y orientación, para texto, Markdown y RTF. Los tres se imprimen como texto nativo, sin pasar por el navegador integrado. El texto usa la fuente del editor; Markdown, el estilo y el tamaño de la vista previa. La impresión RTF conserva el texto y los cuatro estilos anteriores; fuentes, colores y otros elementos RTF complejos no se reproducen.
+- El botón «Formato Markdown» abre la edición con vista previa en la misma pestaña. La barra permite aplicar encabezados, negrita, cursiva, listas y tablas. El contenido se guarda como sintaxis Markdown en el archivo actual, incluso si se llama `.txt`. «Guardar como» permite elegir `.md`.
+- El selector «Texto» / «Markdown» cambia cómo se edita el contenido. La vista dividida muestra el resultado mientras se escribe en el editor y respeta el tema de la aplicación.
+- Archivo → Imprimir (`Ctrl+P`) abre el diálogo de Windows para texto y Markdown. El texto usa la fuente del editor y Markdown usa el estilo y el tamaño de la vista previa.
 
 **Editor Markdown**
 
@@ -100,7 +98,7 @@ powershell tools\Measure-Startup.ps1 -Runs 5
 dotnet test Memos/Memos.Tests
 ```
 
-Pruebas del núcleo: codificaciones y BOM, Unicode (emojis, RTL, combinados), saltos de línea, documentos vacíos y grandes, solo lectura, rutas inexistentes, archivos bloqueados, búsqueda y reemplazo (en un documento y en todas las pestañas), deshacer, modo sobrescritura, operaciones de línea, RTF básico, renderizado y seguridad de Markdown, front matter, exportación HTML, cierre con cambios pendientes, recuperación de sesión, registro de errores y persistencia de preferencias.
+Pruebas del núcleo: codificaciones y BOM, Unicode (emojis, RTL, combinados), saltos de línea, documentos vacíos y grandes, solo lectura, rutas inexistentes, archivos bloqueados, búsqueda y reemplazo (en un documento y en todas las pestañas), deshacer, modo sobrescritura, operaciones de línea, renderizado y seguridad de Markdown, front matter, exportación HTML, cierre con cambios pendientes, recuperación de sesión, registro de errores y persistencia de preferencias.
 
 ### Pruebas de interfaz
 
@@ -149,7 +147,7 @@ pwsh tools/New-BrandAssets.ps1
 |---|---|---|---|
 | Ctrl+N | Nuevo texto | Ctrl+Mayús+N | Nuevo Markdown |
 | Ctrl+O | Abrir | Ctrl+S / Ctrl+Mayús+S / Ctrl+Alt+S | Guardar / como / todo |
-| Ctrl+P | Imprimir | Ctrl+Alt+N | Nuevo RTF |
+| Ctrl+P | Imprimir | | |
 | Ctrl+W | Cerrar pestaña | Ctrl+Mayús+T | Reabrir pestaña |
 | Ctrl+Tab / Ctrl+Mayús+Tab | Pestaña siguiente / anterior | Ctrl+, | Configuración |
 | Ctrl+Z / Ctrl+Y | Deshacer / rehacer | Ctrl+F / Ctrl+H / F3 | Buscar / reemplazar / siguiente |
@@ -165,7 +163,6 @@ pwsh tools/New-BrandAssets.ps1
 Declarados para que nada parezca implementado sin estarlo:
 
 - **Tamaño de archivo.** Se pide confirmación por encima de 2 MB y se rechazan los de más de 10 MB. El control de edición (RichEditBox) maqueta el documento completo al abrirlo. Medido en este equipo: 1 MB ASCII ≈ 1 s; 5,6 MB ASCII ≈ 4 s; 1 MB con muchos acentos ≈ 5–9 s; 5,6 MB con muchos acentos ≈ 2,5 min con la ventana sin responder. Una vez abierto, escribir en un archivo de 1 MB es fluido. El resaltado Markdown en el editor se desactiva por encima de 300 000 caracteres.
-- **RTF:** se admiten archivos `.rtf` y los cuatro estilos de carácter de la barra. No hay controles para tablas, imágenes, colores ni formato de párrafo RTF. El zoom, la fuente del editor, la codificación y el salto de línea no se aplican a estos documentos. Al quitar el formato el documento queda sin archivo asociado: se guarda con un nombre nuevo.
 - **Imprimir:** no se añaden encabezado ni pie. La impresión de Markdown tiene su propia maquetación y no es idéntica a la vista previa ni al PDF exportado: el código va sin colores de sintaxis ni fondo, las citas se distinguen por la sangría y el color, y una tabla que cambia de página no repite su cabecera. Las imágenes SVG y las que no se pueden leer se sustituyen por su texto alternativo; las remotas solo se cargan si están permitidas en la configuración.
 - **Caracteres invisibles:** se dibujan en una capa sobre el texto, solo para las líneas visibles. En una línea descomunal (más de 60 000 caracteres a la vista) se marcan solo los primeros.
 - **Sobrescritura:** el cursor no cambia de forma (el control no lo permite); el modo se ve en la barra de estado. Pegar siempre inserta.

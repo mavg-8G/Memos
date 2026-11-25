@@ -36,9 +36,6 @@ public partial class DocumentViewModel : ObservableObject, IDisposable
     private bool _navigatingHistory;
     private bool _applyingCommand;
     private bool _metadataModified;
-    private string _richText = "";
-    private string _savedRichText = "";
-    private string? _unformattedRichText;
 
     public DocumentViewModel(DocumentServices services, DocumentKind kind, string displayName)
     {
@@ -68,8 +65,6 @@ public partial class DocumentViewModel : ObservableObject, IDisposable
     /// <summary>Current text with '\n' line separators.</summary>
     public string Text { get; private set; } = "";
 
-    public string RichText => _richText;
-
     /// <summary>Increases with every text change.</summary>
     public int TextVersion { get; private set; }
 
@@ -92,15 +87,6 @@ public partial class DocumentViewModel : ObservableObject, IDisposable
     public int LineCount => Lines.LineCount;
 
     public bool IsMarkdown => Kind == DocumentKind.Markdown;
-
-    public bool IsRichText => Kind == DocumentKind.RichText;
-
-    /// <summary>
-    /// True when turning the formatting off would lose something: the document has text and is no
-    /// longer the plain text it was converted from.
-    /// </summary>
-    public bool HasRichFormatting =>
-        IsRichText && Text.Length > 0 && !string.Equals(_richText, _unformattedRichText, StringComparison.Ordinal);
 
     /// <summary>A new, empty, never-edited document; opening a file may take its place.</summary>
     public bool IsPristine => FilePath is null && !IsModified && Text.Length == 0;
@@ -152,101 +138,6 @@ public partial class DocumentViewModel : ObservableObject, IDisposable
         ResetText(loaded.Text);
     }
 
-    public void LoadRichText(LoadedRichText loaded, string path)
-    {
-        FilePath = path;
-        DisplayName = Path.GetFileName(path);
-        Stamp = loaded.Stamp;
-        NotifiedStamp = null;
-        RestoreRichText(loaded.Rtf, modified: false);
-    }
-
-    public void RestoreRichText(string rtf, bool modified)
-    {
-        _richText = rtf;
-        _savedRichText = modified ? "" : rtf;
-        _unformattedRichText = null;
-        if (Editor is IRichEditorSurface rich)
-        {
-            rich.LoadRichText(rtf);
-        }
-        else
-        {
-            // Without a control the text is read from the RTF, so search and statistics work on
-            // tabs that have not been shown yet. The control replaces it with its own reading.
-            _navigatingHistory = true;
-            try { CommitText(RichTextCodec.ToPlainText(rtf)); }
-            finally { _navigatingHistory = false; }
-        }
-
-        UpdateHistoryState();
-    }
-
-    public void ConvertToRichText()
-    {
-        if (IsRichText) return;
-
-        // An untouched blank tab stays untouched; anything else has to be saved under a new .rtf name.
-        var pristine = IsPristine;
-        _richText = RichTextCodec.FromPlainText(Text);
-        _savedRichText = pristine ? _richText : "";
-        _unformattedRichText = _richText;
-        DetachFromFile();
-        Kind = DocumentKind.RichText;
-        UpdateHistoryState();
-    }
-
-    /// <summary>
-    /// Turns a rich document into plain text or Markdown. The text stays, the formatting is dropped
-    /// and the .rtf file, if there was one, is left as it is on disk.
-    /// </summary>
-    public void ConvertToPlainText(DocumentKind kind)
-    {
-        if (!IsRichText || kind == DocumentKind.RichText) return;
-
-        var pristine = IsPristine;
-        _richText = "";
-        _savedRichText = "";
-        _unformattedRichText = null;
-        DetachFromFile();
-
-        // The text was edited through the control's own history; this one no longer describes it.
-        _history.Clear();
-        if (!pristine) _history.MarkUnsaved();
-        _metadataModified = false;
-        _pendingChange = null;
-        Kind = kind;
-        UpdateHistoryState();
-    }
-
-    /// <summary>The name of a file stays as the suggestion for the next save, without its extension.</summary>
-    private void DetachFromFile()
-    {
-        if (FilePath is not null) DisplayName = Path.GetFileNameWithoutExtension(DisplayName);
-        FilePath = null;
-        Stamp = null;
-
-        // The session backup holds the other format: it has to be written again.
-        BackupVersion = -1;
-    }
-
-    /// <summary>
-    /// The control has loaded the document. It writes RTF its own way, so its version becomes the
-    /// reference: otherwise a file would look modified as soon as it is opened.
-    /// </summary>
-    public void OnEditorRichTextLoaded(string text, string rtf)
-    {
-        var unmodified = string.Equals(_richText, _savedRichText, StringComparison.Ordinal);
-        var unformatted = string.Equals(_richText, _unformattedRichText, StringComparison.Ordinal);
-        _richText = rtf;
-        if (unmodified) _savedRichText = rtf;
-        if (unformatted) _unformattedRichText = rtf;
-        _navigatingHistory = true;
-        try { CommitText(text); }
-        finally { _navigatingHistory = false; }
-        UpdateHistoryState();
-    }
-
     /// <summary>Sets the content without creating an undo step. <paramref name="modified"/> marks it as unsaved.</summary>
     public void ResetText(string text, bool modified = false)
     {
@@ -289,7 +180,6 @@ public partial class DocumentViewModel : ObservableObject, IDisposable
         Stamp = stamp;
         NotifiedStamp = null;
         _history.MarkSaved();
-        if (IsRichText) _savedRichText = _richText;
         _metadataModified = false;
         UpdateHistoryState();
     }
@@ -318,24 +208,6 @@ public partial class DocumentViewModel : ObservableObject, IDisposable
     // ---- Called by the editing control ------------------------------------------------------------
 
     public void OnEditorTextChanged(string newText) => CommitText(newText);
-
-    public void OnEditorRichTextChanged(string newText, string rtf)
-    {
-        if (string.Equals(_richText, rtf, StringComparison.Ordinal) && string.Equals(Text, newText, StringComparison.Ordinal)) return;
-        _richText = rtf;
-        var previousVersion = TextVersion;
-        _navigatingHistory = true;
-        try { CommitText(newText); }
-        finally { _navigatingHistory = false; }
-        if (TextVersion == previousVersion)
-        {
-            TextVersion++;
-            TextChanged?.Invoke(this, EventArgs.Empty);
-        }
-        UpdateHistoryState();
-    }
-
-    public void ToggleRichStyle(RichStyle style) => (Editor as IRichEditorSurface)?.ToggleRichStyle(style);
 
     public void OnEditorSelectionChanged(int start, int length) => SetSelection(start, length);
 
@@ -369,25 +241,9 @@ public partial class DocumentViewModel : ObservableObject, IDisposable
         }
     }
 
-    public void Undo()
-    {
-        if (IsRichText)
-        {
-            (Editor as IRichEditorSurface)?.UndoRich();
-            UpdateHistoryState();
-        }
-        else Navigate(_history.Undo());
-    }
+    public void Undo() => Navigate(_history.Undo());
 
-    public void Redo()
-    {
-        if (IsRichText)
-        {
-            (Editor as IRichEditorSurface)?.RedoRich();
-            UpdateHistoryState();
-        }
-        else Navigate(_history.Redo());
-    }
+    public void Redo() => Navigate(_history.Redo());
 
     public void Select(int start, int length)
     {
@@ -561,7 +417,6 @@ public partial class DocumentViewModel : ObservableObject, IDisposable
     partial void OnKindChanged(DocumentKind value)
     {
         OnPropertyChanged(nameof(IsMarkdown));
-        OnPropertyChanged(nameof(IsRichText));
         if (value == DocumentKind.Markdown)
         {
             _ = RefreshAnalysisAsync();
@@ -745,15 +600,6 @@ public partial class DocumentViewModel : ObservableObject, IDisposable
 
     private void UpdateHistoryState()
     {
-        if (IsRichText)
-        {
-            // The native history of the control is the only one that knows about formatting changes.
-            var rich = Editor as IRichEditorSurface;
-            CanUndo = rich?.CanUndoRich == true;
-            CanRedo = rich?.CanRedoRich == true;
-            IsModified = !string.Equals(_richText, _savedRichText, StringComparison.Ordinal);
-            return;
-        }
         CanUndo = _history.CanUndo;
         CanRedo = _history.CanRedo;
         IsModified = _metadataModified || !_history.IsAtSavedState;

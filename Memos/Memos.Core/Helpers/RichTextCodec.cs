@@ -3,105 +3,30 @@ using System.Text;
 
 namespace Memos.Core.Helpers;
 
-/// <summary>A stretch of text with the same character styles. Paragraphs end with '\n'.</summary>
-public readonly record struct RichTextRun(string Text, bool Bold = false, bool Italic = false, bool Underline = false, bool Strikethrough = false);
-
-/// <summary>
-/// The RTF that Memos handles without the editing control: creating a document from plain text and
-/// reading the text and the four character styles back (for printing, search and statistics).
-/// </summary>
-public static class RichTextCodec
+/// <summary>Extracts text from session backups written before RTF support was removed.</summary>
+internal static class RichTextCodec
 {
-    private readonly record struct State(bool Bold = false, bool Italic = false, bool Underline = false,
-        bool Strike = false, bool Skip = false, bool Hidden = false, int UnicodeFallback = 1);
-
     static RichTextCodec() => Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-    public static bool IsRichText(string text) => text.StartsWith(@"{\rtf", StringComparison.Ordinal);
+    private readonly record struct State(bool Skip = false, bool Hidden = false, int UnicodeFallback = 1);
 
-    public static string FromPlainText(string text)
-    {
-        var rtf = new StringBuilder(@"{\rtf1\ansi\ansicpg1252\deff0{\fonttbl{\f0 Segoe UI;}}\f0\fs22 ");
-        foreach (var c in text)
-        {
-            switch (c)
-            {
-                case '\\': rtf.Append(@"\\"); break;
-                case '{': rtf.Append(@"\{"); break;
-                case '}': rtf.Append(@"\}"); break;
-                case '\n': rtf.Append(@"\par "); break;
-                case '\t': rtf.Append(@"\tab "); break;
-                default:
-                    if (c < 32 || c > 126) rtf.Append(@"\u").Append((short)c).Append('?');
-                    else rtf.Append(c);
-                    break;
-            }
-        }
-        // Every paragraph is closed, the last one too: a reader takes the final \par as the end of
-        // the document, not as an empty line, so text that ends in a line break keeps it.
-        return rtf.Append(@"\par}").ToString();
-    }
-
-    /// <summary>
-    /// An RTF file is bytes, held here one per character. Any character that does not fit in a
-    /// byte is written as a \u escape instead of being lost when the file is saved.
-    /// </summary>
-    public static string EscapeNonLatin(string rtf)
-    {
-        if (!rtf.AsSpan().ContainsAnyExceptInRange('\0', 'ÿ')) return rtf;
-
-        var escaped = new StringBuilder(rtf.Length + 16);
-        foreach (var c in rtf)
-        {
-            if (c > 'ÿ') escaped.Append(@"\u").Append((short)c).Append('?');
-            else escaped.Append(c);
-        }
-
-        return escaped.ToString();
-    }
-
-    /// <summary>The visible text with '\n' between paragraphs, as the editing control reports it.</summary>
     public static string ToPlainText(string rtf)
     {
-        var text = string.Concat(Parse(rtf).Select(run => run.Text));
-
-        // The last \par closes the final paragraph; it is not a line break of its own.
-        return text.EndsWith('\n') ? text[..^1] : text;
-    }
-
-    /// <summary>
-    /// Reads the text and the bold, italic, underline and strikethrough styles. Everything else
-    /// (fonts, colours, tables, pictures, headers) is skipped; text that is not RTF yields nothing.
-    /// </summary>
-    public static IReadOnlyList<RichTextRun> Parse(string rtf)
-    {
-        var runs = new List<RichTextRun>();
-        if (!IsRichText(rtf)) return runs;
+        if (!rtf.StartsWith(@"{\rtf", StringComparison.Ordinal))
+        {
+            return rtf;
+        }
 
         var text = new StringBuilder();
         var stack = new Stack<State>();
         var state = new State(UnicodeFallback: 1); // one replacement character unless \uc says otherwise
-        var style = new State();
         var fallback = 0;
         var ansi = Encoding.GetEncoding(1252);
         byte? leadByte = null;
 
-        void Flush()
-        {
-            if (text.Length == 0) return;
-            runs.Add(new RichTextRun(text.ToString(), style.Bold, style.Italic, style.Underline, style.Strike));
-            text.Clear();
-        }
-
         void Write(char c)
         {
             if (state.Skip || state.Hidden || (c < ' ' && c is not ('\t' or '\n'))) return;
-            if (state.Bold != style.Bold || state.Italic != style.Italic || state.Underline != style.Underline || state.Strike != style.Strike)
-            {
-                Flush();
-                style = state;
-            }
-
             text.Append(c);
         }
 
@@ -179,15 +104,8 @@ public static class RichTextCodec
                     try { ansi = Encoding.GetEncoding(number); }
                     catch (Exception ex) when (ex is ArgumentException or NotSupportedException) { }
                     break;
-                case "b": state = state with { Bold = on }; break;
-                case "i": state = state with { Italic = on }; break;
-                case "ulnone": state = state with { Underline = false }; break;
-                case "ul" or "uld" or "uldb" or "ulw" or "ulwave" or "ulth" or "uldash" or "uldashd" or "uldashdd":
-                    state = state with { Underline = on };
-                    break;
-                case "strike" or "striked": state = state with { Strike = on }; break;
                 case "v": state = state with { Hidden = on }; break;
-                case "plain": state = state with { Bold = false, Italic = false, Underline = false, Strike = false, Hidden = false }; break;
+                case "plain": state = state with { Hidden = false }; break;
                 case "uc" when hasNumber: state = state with { UnicodeFallback = Math.Max(0, number) }; break;
                 case "u" when hasNumber:
                     Write((char)(ushort)number);
@@ -206,7 +124,8 @@ public static class RichTextCodec
             }
         }
 
-        Flush();
-        return runs;
+        // The last \par closes the final paragraph.
+        if (text.Length > 0 && text[^1] == '\n') text.Length--;
+        return text.ToString();
     }
 }

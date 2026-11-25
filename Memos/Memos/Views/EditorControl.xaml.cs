@@ -24,7 +24,7 @@ namespace Memos.Views;
 /// number gutter. The control owns nothing but presentation; text, undo history and commands live
 /// in the <see cref="DocumentViewModel"/> it is attached to.
 /// </summary>
-public sealed partial class EditorControl : UserControl, IRichEditorSurface
+public sealed partial class EditorControl : UserControl, IEditorSurface
 {
     /// <summary>At most this many search matches get a background highlight.</summary>
     private const int MaxHighlightedMatches = 3000;
@@ -41,7 +41,6 @@ public sealed partial class EditorControl : UserControl, IRichEditorSurface
     private bool _hasStyling;
     private IReadOnlyList<SyntaxRun> _runs = [];
     private bool _invisiblesQueued;
-    private bool _richLoadPending;
 
     private SyntaxPalette Palette => SyntaxPalette.For(_settings?.SyntaxTheme ?? SyntaxTheme.Default, ActualTheme == ElementTheme.Dark);
 
@@ -53,7 +52,7 @@ public sealed partial class EditorControl : UserControl, IRichEditorSurface
         Box.Document.UndoLimit = 0;
 
         Box.TextChanging += (_, e) => _textDirty |= e.IsContentChanging;
-        Box.TextChanged += (_, _) => { if (_document?.IsRichText == true) _textDirty = true; SyncFromControl(); };
+        Box.TextChanged += (_, _) => SyncFromControl();
         Box.SelectionChanged += (_, _) => OnSelectionChanged();
         Box.Paste += OnPaste;
         Box.PreviewKeyDown += OnPreviewKeyDown;
@@ -78,17 +77,7 @@ public sealed partial class EditorControl : UserControl, IRichEditorSurface
         document.PropertyChanged += OnDocumentPropertyChanged;
 
         ApplyAppearance();
-        if (document.IsRichText)
-        {
-            Box.ClipboardCopyFormat = RichEditClipboardFormat.AllFormats;
-            LoadRichText(document.RichText);
-        }
-        else
-        {
-            Box.ClipboardCopyFormat = RichEditClipboardFormat.PlainText;
-            Box.Document.UndoLimit = 0;
-            SetWholeText(document.Text);
-        }
+        SetWholeText(document.Text);
         SetSelection(document.SelectionStart, document.SelectionLength);
         document.Editor = this;
     }
@@ -154,64 +143,8 @@ public sealed partial class EditorControl : UserControl, IRichEditorSurface
     public void Paste()
     {
         Box.Focus(FocusState.Programmatic);
-        if (_document?.IsRichText == true) Box.Document.Selection.Paste(0);
-        else _ = PasteTextAsync();
+        _ = PasteTextAsync();
     }
-
-    public void LoadRichText(string rtf)
-    {
-        if (!Box.IsLoaded)
-        {
-            // When the control enters the window it applies its own font to everything it holds,
-            // which would flatten the fonts of the document. The document is loaded after that.
-            _richLoadPending = true;
-            return;
-        }
-
-        _updating = true;
-        try
-        {
-            // Loading is not an edit: the native history starts empty after it.
-            Box.Document.UndoLimit = 0;
-            // A new document starts from the same template as a converted one, so its defaults
-            // (font, automatic colour) come from the RTF and not from the theme of the moment.
-            Box.Document.SetText(TextSetOptions.FormatRtf | TextSetOptions.ApplyRtfDocumentDefaults,
-                string.IsNullOrEmpty(rtf) ? Memos.Core.Helpers.RichTextCodec.FromPlainText("") : rtf);
-            Box.Document.UndoLimit = 100;
-            Box.Document.GetText(TextGetOptions.None, out var raw);
-            _hasFinalParagraphMark = raw.EndsWith('\r');
-        }
-        finally { _updating = false; }
-        _lastText = ReadText();
-        _textDirty = false;
-        _hasStyling = false;
-        _runs = [];
-        _highlighted.Clear();
-        _document?.OnEditorRichTextLoaded(_lastText, ReadRtf());
-    }
-
-    public bool CanUndoRich => Box.Document.CanUndo();
-
-    public bool CanRedoRich => Box.Document.CanRedo();
-
-    public void ToggleRichStyle(RichStyle style)
-    {
-        var format = Box.Document.Selection.CharacterFormat;
-        switch (style)
-        {
-            case RichStyle.Bold: format.Bold = format.Bold == FormatEffect.On ? FormatEffect.Off : FormatEffect.On; break;
-            case RichStyle.Italic: format.Italic = format.Italic == FormatEffect.On ? FormatEffect.Off : FormatEffect.On; break;
-            case RichStyle.Underline: format.Underline = format.Underline == UnderlineType.None ? UnderlineType.Single : UnderlineType.None; break;
-            case RichStyle.Strikethrough: format.Strikethrough = format.Strikethrough == FormatEffect.On ? FormatEffect.Off : FormatEffect.On; break;
-        }
-        _textDirty = true;
-        SyncFromControl();
-        Box.Focus(FocusState.Programmatic);
-    }
-
-    public void UndoRich() => Box.Document.Undo();
-
-    public void RedoRich() => Box.Document.Redo();
 
     public void SelectAll()
     {
@@ -227,7 +160,6 @@ public sealed partial class EditorControl : UserControl, IRichEditorSurface
     /// </summary>
     public void ApplySyntaxRuns(IReadOnlyList<SyntaxRun> runs, (int Start, int End)? dirtyRange)
     {
-        if (_document?.IsRichText == true) return;
         _runs = runs;
         var length = _lastText.Length;
         var (start, end) = dirtyRange ?? (0, length);
@@ -286,7 +218,6 @@ public sealed partial class EditorControl : UserControl, IRichEditorSurface
     /// <summary>Marks every search match with a background colour and clears the previous marks.</summary>
     public void ApplySearchHighlights(IReadOnlyList<TextMatch> matches)
     {
-        if (_document?.IsRichText == true) return;
         if (matches.Count == 0 && _highlighted.Count == 0)
         {
             return;
@@ -360,16 +291,6 @@ public sealed partial class EditorControl : UserControl, IRichEditorSurface
             };
         }
 
-        if (_richLoadPending)
-        {
-            _richLoadPending = false;
-            if (_document is { IsRichText: true } document)
-            {
-                LoadRichText(document.RichText);
-                SetSelection(document.SelectionStart, document.SelectionLength);
-            }
-        }
-
         UpdateGutter();
     }
 
@@ -383,14 +304,10 @@ public sealed partial class EditorControl : UserControl, IRichEditorSurface
 
         _textDirty = false;
         var text = ReadText();
-        if (_document.IsRichText || !string.Equals(text, _lastText, StringComparison.Ordinal))
+        if (!string.Equals(text, _lastText, StringComparison.Ordinal))
         {
             _lastText = text;
-            if (_document.IsRichText)
-            {
-                _document.OnEditorRichTextChanged(text, ReadRtf());
-            }
-            else _document.OnEditorTextChanged(text);
+            _document.OnEditorTextChanged(text);
             UpdateGutter();
             ViewChanged?.Invoke(this, EventArgs.Empty);
         }
@@ -426,7 +343,6 @@ public sealed partial class EditorControl : UserControl, IRichEditorSurface
 
     private void OnPaste(object sender, TextControlPasteEventArgs e)
     {
-        if (_document?.IsRichText == true) return;
         // Always paste as plain text: formatting from other apps must never enter the document.
         e.Handled = true;
         _ = PasteTextAsync();
@@ -464,18 +380,6 @@ public sealed partial class EditorControl : UserControl, IRichEditorSurface
         var control = IsDown(VirtualKey.Control);
         var shift = IsDown(VirtualKey.Shift);
         var alt = IsDown(VirtualKey.Menu);
-
-        if (_document.IsRichText)
-        {
-            // Formatting shortcuts stay with the control; Tab would otherwise move the focus away.
-            if (e.Key == VirtualKey.Tab && !control && !alt)
-            {
-                if (!shift) Box.Document.Selection.TypeText("\t");
-                e.Handled = true;
-            }
-
-            return;
-        }
 
         if (e.Key == VirtualKey.Insert && !control && !shift && !alt)
         {
@@ -522,7 +426,7 @@ public sealed partial class EditorControl : UserControl, IRichEditorSurface
 
     private void OnPointerWheel(object sender, PointerRoutedEventArgs e)
     {
-        if (_document is null || _document.IsRichText || !e.KeyModifiers.HasFlag(VirtualKeyModifiers.Control))
+        if (_document is null || !e.KeyModifiers.HasFlag(VirtualKeyModifiers.Control))
         {
             return;
         }
@@ -582,33 +486,12 @@ public sealed partial class EditorControl : UserControl, IRichEditorSurface
         {
             ApplyAppearance();
         }
-        else if (e.PropertyName == nameof(DocumentViewModel.Kind) && _document?.IsRichText == true)
-        {
-            Box.ClipboardCopyFormat = RichEditClipboardFormat.AllFormats;
-            ApplyAppearance();
-            LoadRichText(_document.RichText);
-        }
     }
 
     private void ApplyAppearance()
     {
         if (_document is null || _settings is null)
         {
-            return;
-        }
-
-        // Rich text is shown as a page, dark text on white, whatever the theme: its colours belong
-        // to the document, and "automatic" text would be unreadable on a dark background.
-        RequestedTheme = _document.IsRichText ? ElementTheme.Light : ElementTheme.Default;
-        ((Grid)Content).Background = _document.IsRichText ? new SolidColorBrush(Colors.White) : null;
-
-        if (_document.IsRichText)
-        {
-            // An RTF document carries its own fonts and sizes; the control's would replace them all.
-            Box.ClearValue(FontFamilyProperty);
-            Box.ClearValue(FontSizeProperty);
-            Box.TextWrapping = TextWrapping.Wrap;
-            UpdateGutter();
             return;
         }
 
@@ -658,13 +541,6 @@ public sealed partial class EditorControl : UserControl, IRichEditorSurface
         }
 
         return raw.Replace('\r', '\n');
-    }
-
-    /// <summary>The document as RTF, without the terminator the control appends to the stream.</summary>
-    private string ReadRtf()
-    {
-        Box.Document.GetText(TextGetOptions.FormatRtf, out var rtf);
-        return rtf.TrimEnd('\0');
     }
 
     private void SetWholeText(string text)

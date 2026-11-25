@@ -1,3 +1,6 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
 namespace Memos.Core.Models;
 
 /// <summary>Identity of a file on disk at the moment it was read or written; used to detect external changes.</summary>
@@ -12,9 +15,6 @@ public sealed record LoadedText(
     bool HadInvalidBytes,
     bool EncodingWasGuessed,
     FileStamp Stamp);
-
-/// <summary>RTF bytes are represented one-to-one as Latin-1 characters until the editor loads them.</summary>
-public sealed record LoadedRichText(string Rtf, FileStamp Stamp);
 
 /// <summary>A replacement of <c>Length</c> characters at <c>Start</c>, plus the selection to set afterwards.</summary>
 public readonly record struct TextEdit(int Start, int Length, string NewText, int SelectionStart, int SelectionLength)
@@ -39,6 +39,7 @@ public sealed record SessionDocument
     public Guid Id { get; set; }
     public string? FilePath { get; set; }
     public string DisplayName { get; set; } = "";
+    [JsonConverter(typeof(SessionDocumentKindConverter))]
     public DocumentKind Kind { get; set; }
     public bool HasBackup { get; set; }
     public TextEncodingId Encoding { get; set; }
@@ -48,6 +49,38 @@ public sealed record SessionDocument
     public MarkdownViewMode ViewMode { get; set; }
 }
 
+// Older sessions wrote the RTF kind as "RichText". Keep it readable for draft recovery.
+internal sealed class SessionDocumentKindConverter : JsonConverter<DocumentKind>
+{
+    internal const DocumentKind LegacyRtf = (DocumentKind)2;
+
+    public override DocumentKind Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.String)
+        {
+            var name = reader.GetString();
+            if (string.Equals(name, "RichText", StringComparison.OrdinalIgnoreCase))
+            {
+                return LegacyRtf;
+            }
+
+            if (Enum.TryParse<DocumentKind>(name, ignoreCase: true, out var kind))
+            {
+                return kind;
+            }
+        }
+        else if (reader.TokenType == JsonTokenType.Number && reader.TryGetInt32(out var value))
+        {
+            return (DocumentKind)value;
+        }
+
+        throw new JsonException("Invalid session document kind.");
+    }
+
+    public override void Write(Utf8JsonWriter writer, DocumentKind value, JsonSerializerOptions options) =>
+        writer.WriteStringValue(value.ToString());
+}
+
 public sealed record SessionState
 {
     public List<SessionDocument> Documents { get; set; } = [];
@@ -55,4 +88,4 @@ public sealed record SessionState
 }
 
 /// <summary>What is needed to bring back a tab the user closed.</summary>
-public sealed record ClosedDocument(string? FilePath, string DisplayName, DocumentKind Kind, string? Text, int SelectionStart, string? Rtf = null);
+public sealed record ClosedDocument(string? FilePath, string DisplayName, DocumentKind Kind, string? Text, int SelectionStart);
